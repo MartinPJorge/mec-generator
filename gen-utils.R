@@ -1,3 +1,5 @@
+library(pracma)
+
 # It generates an intensity function that is the sum of more intensity
 # functions centered at certain locations.
 #
@@ -82,3 +84,43 @@ rad_thin <- function(x, y, ...) {
   
   return(deletions)
 }
+
+
+# Calculates the intensity measure of an inhomogeneous PPP at an observed region
+# after it has been thinned with points lying inside a ball. The function
+# obtains the intensity measure at the ball B((x,y), r), with (x,y) inside
+# obs_win.
+# x: ball center X coordinate
+# y: ball center Y coordinate
+# intensity: intensity function of the original PPP
+# obs_win: owin object (only rectangles are supported)
+#
+# returns: the intensity measure of the ball B((x,y), r)
+rad_th_intm <- function(x, y, r, intensity, obs_win) {
+  
+  # Intensity function after Matern I thinning
+  rad_th_int <- function(x, y) {
+    # Intensity measure of the ball B((x,y), r)
+    ball_intm <- function(x, y, r, intensity) {
+      # Function to be integrated in polar coordinates with origin (x0, y0)
+      polar_shifted_intensity <- function(r, theta) {
+        x0 <- x
+        y0 <- y
+        return(r * intensity(r*cos(theta) - x0, r*sin(theta) - y0))
+      }
+    
+      return(integral2(polar_shifted_intensity, xmin = 0, xmax = r,
+                ymin = 0, ymax = 2*pi))
+    }
+    
+    mu_B <- ball_intm(x, y, r, intensity)$Q
+    
+    # return((1 - exp(-1 * mu_B)) * intensity(x, y))
+    return(exp(-1 * mu_B) * intensity(x, y))
+  } 
+  
+  return(integral2(rad_th_int,
+            xmin = obs_win$xrange[1], xmax = obs_win$xrange[2],
+            ymin = obs_win$yrange[1], ymax = obs_win$yrange[2]))
+}
+

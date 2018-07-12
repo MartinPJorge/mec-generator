@@ -27,7 +27,7 @@ puntos <- rpoispp(mantaca, win = rectangulo)
 rect_im <- im(values, xcol=xtics, yrow=ytics)
 #contour.im(rect_im, add=FALSE, axes=TRUE, clipwin = rectangulo)
 #contour(rect_im, add=TRUE, axes=TRUE, clipwin = rectangulo)
-puntos_th <- rthin(puntos, rad_thin, 2, nsim=1, drop=TRUE)
+puntos_th <- rthin(X=puntos, P=rad_thin, r=2, nsim=1, drop=TRUE)
 filled.contour(values, x = xtics, y = ytics, col=gray.colors(40),
                plot.axes = { points(puntos); axis(1); axis(2) }
 )
@@ -36,3 +36,16 @@ filled.contour(values, x = xtics, y = ytics, col=gray.colors(40),
 )
 # points(antenas, pch=17)
 # points(puntos, pch=19)
+r=3
+rectangulo_r <- owin(xrange=c(-10,10), yrange=c(-10,10))
+int_th <- rad_th_intm(x=1, y=0, r=2, intensity=mantaca, obs_win=rectangulo_r)$Q
+int_orig <- integral2(mantaca,
+                 xmin = rectangulo$xrange[1], xmax = rectangulo$xrange[2],
+                 ymin = rectangulo$yrange[1], ymax = rectangulo$yrange[2])$Q
+
+cat("intensity OK at (0,0): ", mantaca(0,0))
+
+cat("mu(R) = ", int_orig, "\n")
+cat("mu_th(R) = ", int_th, "\n")
+cat("Realization X in R has ", length(puntos$x), " points\n")
+cat("Realization X_th in R has ", length(puntos_th$x), " points\n")
