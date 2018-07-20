@@ -98,7 +98,7 @@ rad_thin <- function(x, y, ...) {
 # returns: the intensity measure of the ball B((x,y), r)
 rad_th_intm <- function(x, y, r, intensity, obs_win) {
   
-  # Intensity function after Matern I thinning
+  # Intensity function after radial thinning
   rad_th_int <- function(x, y) {
     # Intensity measure of the ball B((x,y), r)
     ball_intm <- function(x, y, r, intensity) {
@@ -106,7 +106,7 @@ rad_th_intm <- function(x, y, r, intensity, obs_win) {
       polar_shifted_intensity <- function(r, theta) {
         x0 <- x
         y0 <- y
-        return(r * intensity(r*cos(theta) - x0, r*sin(theta) - y0))
+        return(r * intensity(r*cos(theta) + x0, r*sin(theta) + y0))
       }
     
       return(integral2(polar_shifted_intensity, xmin = 0, xmax = r,
