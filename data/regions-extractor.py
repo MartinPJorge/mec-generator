@@ -69,5 +69,6 @@ if __name__ == "__main__":
 
     with open(REGIONS_FILE) as f:
         regions = json.load(f)
-        extractRegion(CELLS_CSV, regions["regions"][0], fields)
+        for region in regions["regions"]:
+            extractRegion(CELLS_CSV, region, fields)
 

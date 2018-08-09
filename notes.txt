@@ -1,0 +1,5 @@
+### Harvesine vs Vicenty
+Harvesine te da errores de 3m por kilometro, sin embargo Vicenty tiene una precisión de 0.5 mm en las distancias. Por eso se usa Vicenty para PAM() y en la generación de la función de intensidad.
+
+## Clustering
+Para el clustering vas a utilizar PAM() en vez de k-means porque esta última técnica se basa en la distancia euclídea. Nosotros tenemos la distancia de Vicenty.
