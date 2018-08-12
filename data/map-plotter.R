@@ -12,5 +12,5 @@ ggmap(map)
 e_ <- 8.1819190842622e-2 # first excentricity
 a_ <- 6378137            # semi-major axis
 
-madCenterR <- a_ * (1 - e_^2) / (1 - e_^2 * sin(40.44)^2)^(3/2)
-madCenterW <- madCenterR * (-3.651810 - -3.755549)*pi/180*cos(40.44 *pi/180)
+madCenterR <- a_ * (1 - e_^2) / (1 - e_^2 * sin(40.44 *pi/180)^2)^(3/2)
+madCenterW <- madCenterR * (-3.651810 - -3.755549)*pi/180*cos(40.381710 *pi/180)
