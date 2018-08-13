@@ -31,19 +31,24 @@ for (region_ in regions$regions) {
 }
 
 # Extract the location of the antennasd
-HEAD_ANTENNAS <- 100 # <- vary this to know with how many antennas can work
+HEAD_ANTENNAS <- 20 # <- vary this to know with how many antennas can work
 antennasLoc <- head(regionAntennas, HEAD_ANTENNAS)
 
 # Intensity function generation
 # intensityF <- gen_manta(antennasLoc, factor=1e20, dgamma, shape=1, scale=10000)
+repRad <- region$repulsionRadius
 intensityF <- gen_manta(centers = antennasLoc, factor = 1000,
                         centers_intensity = stepIntensity,
-                        a = 100, b = 150, c = 650, d = 700)
-timestamp()
+                        a = repRad, b = repRad + 50,
+                        c = repRad + 550, d = repRad + 600)
+
+# Generate the samples to draw the intensity
+latitudeSamples <- 50
+longitudeSamples <- 50
 intFrame <- genIntFrame(latis = c(region$bl$lat, region$tr$lat),
                         longis = c(region$bl$lon, region$tr$lon),
-                        latisLen = 50, longisLen = 50, intF = intensityF) 
-timestamp()
+                        latisLen = latitudeSamples,
+                        longisLen = longitudeSamples, intF = intensityF) 
 
 # Poisson point process generation for the PoPs
 ppWindow <- owin(xrange = c(region$bl$lon, region$tr$lon),
@@ -61,19 +66,6 @@ mapRegion <- c(left = region$bl$lon, bottom = region$bl$lat,
                right = region$tr$lon, top = region$tr$lat)
 map <- get_map(mapRegion, zoom = 13, source = "stamen",
               maptype = "toner-lite")
-ggmap(map) + 
-  stat_contour(data=intFrame, aes(z=intensity, fill=intensity, color=..level..),
-               geom='polygon', alpha=0.2) +
-  scale_fill_gradient(low = "gray", high = "black") +
-  scale_colour_gradient(low = "gray", high = "black") +
-  labs(color = TeX("$\\lambda (u)$")) +
-  geom_point(data = antennasLoc, aes(shape="triangle"))
-#  geom_point(data = data.frame(lat = pops_th$y, lon = pops_th$x),
-#             aes(shape="circle"))
-
-#  stat_contour(data=intFrame, aes(z=intensity)) +
-#  scale_fill_gradient(low = "gray", high = "black")
-
 
 ######### TEMPTATIVE FIX https://github.com/eliocamp/metR/blob/master/R/stat_contour_fill.R#L36
 ggmap(map) + 
@@ -83,42 +75,8 @@ ggmap(map) +
   scale_colour_gradient(low = "gray", high = "black") +
   labs(color = TeX("$\\lambda (u)$")) +
   geom_point(data = antennasLoc, aes(shape="triangle"))
+#  geom_point(data = data.frame(lat = pops_th$y, lon = pops_th$x),
+#             aes(shape="circle"))
 
 
 
-
-########## NOW WITH OUR DATA based in https://github.com/hypertidy/contourPolys
-intMat <- genIntMatrix(latis = c(region$bl$lat, region$tr$lat),
-                        longis = c(region$bl$lon, region$tr$lon),
-                        latisLen = 50, longisLen = 50, intF = intensityF) 
-z <- intMat$matrix
-y <- intMat$latAxis
-x <- intMat$lonAxis
-
-levels <- pretty(range(z), n = 20)
-p <- contourPolys::fcontour(x, y, z, levels)
-m <- cbind(lon = unlist(p[[1]]), 
-           lat = unlist(p[[2]]), 
-           lower = rep(unlist(p[[3]]), lengths(p[[1]])), 
-           upper = rep(unlist(p[[4]]), lengths(p[[1]])), 
-           g = rep(seq_along(p[[1]]), lengths(p[[1]]))) 
-
-gd <- as.data.frame(m)
-
-ggmap(map) +
-  geom_polygon(data = gd, aes(x = lon, y = lat,
-                              group = g, fill = upper, alpha = 1)) +
-  scale_fill_gradient(low = "gray", high = "black") +
-  geom_point(data = antennasLoc, aes(shape="b")) +
-  labs(fill = TeX("$\\lambda (u)$"))
-  
-
-  # ggmap(map) + 
-#   stat_contour(data=intFrame, aes(z=intensity, fill=intensity, color=..level..),
-#                geom='polygon', alpha=0.2) +
-#   scale_fill_gradient(low = "gray", high = "black") +
-#   scale_colour_gradient(low = "gray", high = "black") +
-#   labs(color = TeX("$\\lambda (u)$")) +
-#   geom_point(data = antennasLoc, aes(shape="triangle")) +
-#   geom_point(data = data.frame(lat = pops_th$y, lon = pops_th$x),
-#              aes(shape="circle"))
