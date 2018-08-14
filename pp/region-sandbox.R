@@ -31,23 +31,37 @@ for (region_ in regions$regions) {
 }
 
 # Extract the location of the antennasd
-HEAD_ANTENNAS <- dim(regionAntennas)[1] # <- vary this to know with how many antennas can work
+HEAD_ANTENNAS <- 1 #dim(regionAntennas)[1] # <- vary this to know with how many antennas can work
 antennasLoc <- head(regionAntennas, HEAD_ANTENNAS)
-if (REGION_NAME == "Madrid-center") {
-  antennasLoc <- subset(antennasLoc, antennasLoc$radio == "LTE")
-}
+# if (REGION_NAME == "Madrid-center") {
+#   antennasLoc <- subset(antennasLoc, antennasLoc$radio == "LTE")
+# }
 
 # Intensity function generation
 # intensityF <- gen_manta(antennasLoc, factor=1e20, dgamma, shape=1, scale=10000)
 repRad <- region$repulsionRadius
-intensityF <- gen_manta(centers = antennasLoc, factor = 1000,
+intensityF <- gen_manta(centers = antennasLoc, factor = 1e5,
                         centers_intensity = stepIntensity,
                         a = repRad, b = repRad + 50,
                         c = repRad + 550, d = repRad + 600)
 
-# Generate the samples to draw the intensity
+# Generate points with custom MaternII
 latitudeSamples <- 50
 longitudeSamples <- 50
+intMat <- genIntMatrix(latis = c(region$bl$lat, region$tr$lat),
+                        longis = c(region$bl$lon, region$tr$lon),
+                        latisLen = latitudeSamples,
+                        longisLen = longitudeSamples, intF = intensityF) 
+lambIntp <- genInterpInt(intMat = intMat$matrix, lonAxis = intMat$longiAxes,
+             latAxis = intMat$latiAxes)
+lambIntp(-36.5, 40.3)
+rThin <- 1000
+ppWindow <- owin(xrange = c(region$bl$lon, region$tr$lon),
+                   yrange = c(region$bl$lat, region$tr$lat))
+pointsMapI <- jorgeMaternIImapI(lambda = intensityF, win = ppWindow,  r = rThin)
+
+
+# Generate the samples to draw the intensity
 timestamp()
 intFrame <- genIntFrame(latis = c(region$bl$lat, region$tr$lat),
                         longis = c(region$bl$lon, region$tr$lon),

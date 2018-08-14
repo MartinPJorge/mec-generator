@@ -108,6 +108,7 @@ genIntFrame <- function(latis, longis, latisLen, longisLen, intF) {
 #' @param intF intensity measure function used to generate the values
 #'
 #' @return a list with $matrix $latAxis $lonAxis
+#' @note the genrated matrix is indexed as (longitude, latitude)
 genIntMatrix <- function(latis, longis, latisLen, longisLen, intF) {
   latiAxes <- seq(from = latis[1], to = latis[2], length = latisLen)
   longiAxes <- seq(from = longis[1], to = longis[2], length = longisLen)
@@ -125,6 +126,30 @@ genIntMatrix <- function(latis, longis, latisLen, longisLen, intF) {
     latAxis = latiAxes,
     lonAxis = longiAxes
   ))
+}
+
+
+#' @description Creates an intensity measure function with a matrix of the
+#' intensity function values along some longitude and latitude axis.
+#' @param intMat matrix with (longitude, latitude) values
+#' @param lonAxis vector of longitudes in the matrix
+#' @param latAxis vector of latitudes in the matrix
+#' @return function that receives (lat, lon) values
+genInterpInt <- function(intMat, lonAxis, latAxis) {
+  lastArgs
+  interpolator<- local({
+    intMat_ <- intMat
+    lonAxis_ <- lonAxis
+    latAxis_ <- latAxis
+    
+    function(lat, lon) {
+      interpVal <- interp2(x = lonAxis_, y = latAxis_, Z = intMat_,
+              xp = lon, yp = lat, method = "linear")
+      return(interpVal)
+    }
+  })
+  
+  return(interpolator)
 }
 
 
@@ -239,7 +264,7 @@ markI <- function(lat, lon, intF) {
 
 #' @description MaternII thinning based on Vicenty's distance
 #' @param X labeled point pattern object of spatstat
-#' @return data.frame(lat, lon, marks, n)
+#' @return list(lat, lon, marks, n)
 vicentyMatIIthin <- function(X, r) {
   survivorsLat <- c()
   survivorsLon <- c()
@@ -252,7 +277,8 @@ vicentyMatIIthin <- function(X, r) {
     foundMinor <- FALSE
     while (!foundMinor & j < X$n) {
       if(i != j) {
-        dist <- distanceMulti(look$lat, look$lon, X[j]$lat, X[j]$lon)
+        dist <- distanceMulti(lat1 = look$y, lon1 = look$x,
+                              lat2 = X[j]$y, lon2 = X[j]$x)
         if (dist < r) {
           foundMinor <- X[j]$marks < look$marks
         }
@@ -261,13 +287,13 @@ vicentyMatIIthin <- function(X, r) {
     }
     
     if (!foundMinor) {
-      survivorsLat <- c(survivorsLat, look$lat)
-      survivorsLon <- c(survivorsLon, look$lon)
+      survivorsLat <- c(survivorsLat, look$y)
+      survivorsLon <- c(survivorsLon, look$x)
       survivorsMarks <- c(survivorsMarks, look$marks)
     }
   }
   
-  return(data.frame(x = survivorsLat, y = survivorsLon, marks = survivorsMarks,
+  return(list(x = survivorsLat, y = survivorsLon, marks = survivorsMarks,
                     n = length(survivorsLat)))
 }
 
@@ -280,12 +306,17 @@ vicentyMatIIthin <- function(X, r) {
 #' @param r MaternII inhibition radius
 #' @return data.frame(x, y, marks, n)
 jorgeMaternIImapI <- function(lambda, win, r) {
-  P <- rpoispp(lambda, win = unitSquare, nsim = 1)
+  print("jorgeMaternII - gener")
+  timestamp()
+  P <- rpoispp(lambda, win = win, nsim = 1)
+  timestamp()
+  if(P$n == 0)
+    return(P)
   
   # Generate the marks for the points
   marks <- c()
   for (i in 1:P$n) {
-    marks <- c(marks, markI(P[i]$lat, P[i]$lon, lambda))
+    marks <- c(marks, markI(lat = P[i]$y, lon = P[i]$x, lambda))
   }
   Plab <- rlabel(P, labels = marks)
   
