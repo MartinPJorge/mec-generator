@@ -39,7 +39,7 @@ getMedoids <- function(antennasLoc, lonSteps, latSteps) {
 
 
 #' @description Performs the PAM clustering based on a given grid.
-#' @param anntenasLoc matrix with two columns -latitude,longitude-
+#' @param anntenasLoc data.frame with columns -latitude,longitude-
 #' @param lonSteps array of longitudes for the grid
 #' @param latSteps array of latitudes for the grid
 #' @return TODO

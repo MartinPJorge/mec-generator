@@ -31,8 +31,11 @@ for (region_ in regions$regions) {
 }
 
 # Extract the location of the antennasd
-HEAD_ANTENNAS <- 20 # <- vary this to know with how many antennas can work
+HEAD_ANTENNAS <- dim(regionAntennas)[1] # <- vary this to know with how many antennas can work
 antennasLoc <- head(regionAntennas, HEAD_ANTENNAS)
+if (REGION_NAME == "Madrid-center") {
+  antennasLoc <- subset(antennasLoc, antennasLoc$radio == "LTE")
+}
 
 # Intensity function generation
 # intensityF <- gen_manta(antennasLoc, factor=1e20, dgamma, shape=1, scale=10000)
@@ -45,10 +48,12 @@ intensityF <- gen_manta(centers = antennasLoc, factor = 1000,
 # Generate the samples to draw the intensity
 latitudeSamples <- 50
 longitudeSamples <- 50
+timestamp()
 intFrame <- genIntFrame(latis = c(region$bl$lat, region$tr$lat),
                         longis = c(region$bl$lon, region$tr$lon),
                         latisLen = latitudeSamples,
                         longisLen = longitudeSamples, intF = intensityF) 
+timestamp()
 
 # Poisson point process generation for the PoPs
 ppWindow <- owin(xrange = c(region$bl$lon, region$tr$lon),

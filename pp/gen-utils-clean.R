@@ -213,3 +213,107 @@ inhIntM <- function(lon1, lon2, lat1, lat2, intensityF) {
                    ymin = lat1, ymax = lat2))
 }
 
+
+#' @description Obtains the distance matrix of a point pattern using Vicenty's
+#' distance
+#' @param X point pattern of spatstat package
+#' @return a matrix of distances
+pairVicentyDist <- function(X) {
+  distances <- matrix(ncol = X$n, nrow = X$n)
+  for (row in 1:nrow(distances)) {
+    distances[row, ] <- distanceMulti(X$lon, X$lat, X[row]$lon, X[row]$lat)
+  }
+  return(distances)
+}
+
+
+#' @description Marks a point as the inverse of its intensity
+#' @param lat latitude coord
+#' @param lon longitude coord
+#' @param intF intensity function to evaluate (lat, lon) intensity
+#' @return 1 / intF(lat, lon)
+markI <- function(lat, lon, intF) {
+  return(1 / intF(lat, lon))
+}
+
+
+#' @description MaternII thinning based on Vicenty's distance
+#' @param X labeled point pattern object of spatstat
+#' @return data.frame(lat, lon, marks, n)
+vicentyMatIIthin <- function(X, r) {
+  survivorsLat <- c()
+  survivorsLon <- c()
+  survivorsMarks <- c()
+  
+  for (i in 1:X$n) {
+    look <- X[i]
+    
+    j <- 1
+    foundMinor <- FALSE
+    while (!foundMinor & j < X$n) {
+      if(i != j) {
+        dist <- distanceMulti(look$lat, look$lon, X[j]$lat, X[j]$lon)
+        if (dist < r) {
+          foundMinor <- X[j]$marks < look$marks
+        }
+      }
+      j <- j + 1
+    }
+    
+    if (!foundMinor) {
+      survivorsLat <- c(survivorsLat, look$lat)
+      survivorsLon <- c(survivorsLon, look$lon)
+      survivorsMarks <- c(survivorsMarks, look$marks)
+    }
+  }
+  
+  return(data.frame(x = survivorsLat, y = survivorsLon, marks = survivorsMarks,
+                    n = length(survivorsLat)))
+}
+
+
+#' @description generates a MaternII process using the markI labeling.
+#' Marks of points are higher for lower intensity. The process is for points in
+#' maps, and it uses Vicenty's distance for the inhibition.
+#' @param lambda intensity function
+#' @param win owin rectangle with the limits
+#' @param r MaternII inhibition radius
+#' @return data.frame(x, y, marks, n)
+jorgeMaternIImapI <- function(lambda, win, r) {
+  P <- rpoispp(lambda, win = unitSquare, nsim = 1)
+  
+  # Generate the marks for the points
+  marks <- c()
+  for (i in 1:P$n) {
+    marks <- c(marks, markI(P[i]$lat, P[i]$lon, lambda))
+  }
+  Plab <- rlabel(P, labels = marks)
+  
+  return(vicentyMatIIthin(Plab, r = r))
+}
+
+
+#' @description Generates a MaternII process using markI as label method.
+#' it is based on the original spatstat rMatternII function
+#' @note this version goes slower than jorgeMaternIImapI
+rMaternIImapI <- function(kappa, r, win = owin(c(0,1),c(0,1)), stationary=TRUE,
+                          ..., nsim=1, drop=TRUE) {
+  
+  bigbox <- if(stationary) grow.rectangle(win, r) else win
+  Y <- rpoispp(kappa, win = bigbox, ..., nsim = nsim, drop=drop)
+  age <- markI(Y$x, Y$y, kappa)
+  d2 <- pairVicentyDist(Y)
+  close <- (d2 <= r)
+  ## random order 1:n
+  older <- outer(age, age, ">")
+  conflict <- close & older
+  ## delete <- apply(conflict, 1, any)
+  delete <- spatstat.utils::matrowany(conflict)
+  Y <- Y[!delete]
+  
+  if (stationary) Y <- Y[win]
+  
+  return(Y)
+}
+
+

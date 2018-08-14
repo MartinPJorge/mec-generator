@@ -3,3 +3,11 @@ Harvesine te da errores de 3m por kilometro, sin embargo Vicenty tiene una preci
 
 ## Clustering
 Para el clustering vas a utilizar PAM() en vez de k-means porque esta última técnica se basa en la distancia euclídea. Nosotros tenemos la distancia de Vicenty.
+
+## Matérn thinning
+ * Matérn I: tienes expresión analítica para el número medio de puntos;
+ * Matérn II: no la tienes;
+La ventaja de Matérn II es que genera marcas, y entre todos los puntos de una bola, se queda el que tenga menor marca. De modo que el número medio de puntos será mayor.
+
+OJO: a vista de los resultados de testMatern2.R, parece que no tiene sentido el thinning porque los puntos donde hay más masa de probabilidad se borran con más facilidad que los que aparecen donde hay menos masa. Al final acaba saliendo una especie de proceso homogeneo cuando los valores de lambda son altos.
+
