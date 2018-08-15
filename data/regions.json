@@ -5,14 +5,116 @@
             "br": "40.381710,-3.651810",
             "bl": "40.381710,-3.755549",
             "tr": "40.487886,-3.651810",
-            "tl": "40.487886,-3.755549"
+            "tl": "40.487886,-3.755549",
+            "repulsionRadius": 800,
+            "plotDetails": {
+                "zoom": 13,
+                "mapType": "toner-lite"
+            },
+            "populations": [
+                {
+                    "id": "Centro",
+                    "population": 132284
+                },
+                {
+                    "id": "Arganzuela",
+                    "population": 153340
+                },
+                {
+                    "id": "Retiro",
+                    "population": 119375
+                },
+                {
+                    "id": "Salamanca",
+                    "population": 145471
+                },
+                {
+                    "id": "Chamartin",
+                    "population": 145380
+                },
+                {
+                    "id": "Tetuan",
+                    "population": 156596
+                },
+                {
+                    "id": "Chamberi",
+                    "population": 138877
+                },
+                {
+                    "id": "Fuencarral",
+                    "population": 244477
+                },
+                {
+                    "id": "Mocloa-Aravaca",
+                    "population": 118395
+                },
+                {
+                    "id": "Latina",
+                    "population": 236798
+                }
+            ]
         },
         {
             "id": "Cobo-Calleja",
             "bl": "40.253541,-3.775409",
             "br": "40.253541,-3.737324",
             "tr": "40.276686,-3.737324",
-            "tl": "40.276686,-3.775409"
+            "tl": "40.276686,-3.775409",
+            "repulsionRadius": 300,
+            "plotDetails": {
+                "zoom": 13,
+                "mapType": "toner-lite"
+            }
+        },
+        {
+            "id": "Valle-Ayora-Cofrentes",
+            "bl": "39.031198,-1.149814",
+            "br": "39.031198,-0.922680",
+            "tr": "39.250406,-0.922680",
+            "tl": "39.250406,-1.149814",
+            "repulsionRadius": 1000,
+            "plotDetails": {
+                "zoom": 11,
+                "mapType": "toner"
+            },
+            "populations": [
+                {
+                    "id": "Ayora",
+                    "population": 5311,
+                    "center": "39.060173,-1.057277",
+                    "radius": 800
+                },
+                {
+                    "id": "Jalance",
+                    "population": 852,
+                    "center": "39.190473,-1.075826",
+                    "radius": 600
+                },
+                {
+                    "id": "Cofrentes",
+                    "population": 9940,
+                    "center": "39.228919,-1.062217",
+                    "radius": 600
+                },
+                {
+                    "id": "Jarafuel",
+                    "population": 785,
+                    "center": "39.140755,-1.075526",
+                    "radius": 500
+                },
+                {
+                    "id": "Teresa-de-Cofrentes",
+                    "population": 631,
+                    "center": "39.104827,-1.051272",
+                    "radius": 400
+                },
+                {
+                    "id": "Zarra",
+                    "population": 381,
+                    "center": "39.091179,-1.075236",
+                    "radius": 250
+                }
+            ]
         }
     ]
 }

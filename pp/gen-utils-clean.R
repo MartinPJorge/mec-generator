@@ -373,3 +373,12 @@ rMaternIImapI <- function(kappa, r, win = owin(c(0,1),c(0,1)), stationary=TRUE,
 }
 
 
+
+#' @description Centered version of the step intensity function stepIntensity()
+#' @param x c variable
+#' @param b step width
+#' @param c center section width
+#' @return number
+centStepIntensity <- function(x, b, c) {
+  return(stepIntensity(x = x + b + c/2, a = 0, b = b, c = b + c, d = 2*b + c))
+}

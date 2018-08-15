@@ -11,3 +11,7 @@ La ventaja de Matérn II es que genera marcas, y entre todos los puntos de una b
 
 OJO: a vista de los resultados de testMatern2.R, parece que no tiene sentido el thinning porque los puntos donde hay más masa de probabilidad se borran con más facilidad que los que aparecen donde hay menos masa. Al final acaba saliendo una especie de proceso homogeneo cuando los valores de lambda son altos.
 
+## Selección de datos
+Aquí encuentras los datos de población por distrito en Madrid: http://www-2.munimadrid.es/TSE6/control/seleccionDatosBarrio
+Aquí los del valle: http://www.argos.gva.es/bdmun/pls/argos_mun/DMEDB_MUNDATOSINDICADORES.DibujaPagina?aNMunId=46263&aNIndicador=2&aVLengua=c
+
