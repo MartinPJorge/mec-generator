@@ -5,6 +5,7 @@ library(graphics)
 library(rjson)
 library(cluster)
 library(latex2exp)
+library(metR)
 
 REGIONS <- "../data/regions.json"
 REGION_NAME <- "Madrid-center"
@@ -31,7 +32,7 @@ for (region_ in regions$regions) {
 }
 
 # Extract the location of the antennasd
-HEAD_ANTENNAS <- 1 #dim(regionAntennas)[1] # <- vary this to know with how many antennas can work
+HEAD_ANTENNAS <- 10 #dim(regionAntennas)[1] # <- vary this to know with how many antennas can work
 antennasLoc <- head(regionAntennas, HEAD_ANTENNAS)
 # if (REGION_NAME == "Madrid-center") {
 #   antennasLoc <- subset(antennasLoc, antennasLoc$radio == "LTE")
@@ -48,54 +49,70 @@ intensityF <- gen_manta(centers = antennasLoc, factor = 1e5,
 # Generate points with custom MaternII
 latitudeSamples <- 50
 longitudeSamples <- 50
+timestamp()
 intMat <- genIntMatrix(latis = c(region$bl$lat, region$tr$lat),
                         longis = c(region$bl$lon, region$tr$lon),
                         latisLen = latitudeSamples,
                         longisLen = longitudeSamples, intF = intensityF) 
-lambIntp <- genInterpInt(intMat = intMat$matrix, lonAxis = intMat$longiAxes,
-             latAxis = intMat$latiAxes)
-lambIntp(-36.5, 40.3)
+timestamp()
+intFrame <- intMat2Frame(intMat$matrix, intMat$latAxis, intMat$lonAxis)
+lambIntp <- genInterpInt(intMat = intMat$matrix, lonAxis = intMat$lonAxis,
+             latAxis = intMat$latAxis)
+val <- lambIntp(-3.689918, 40.42288)
 rThin <- 1000
 ppWindow <- owin(xrange = c(region$bl$lon, region$tr$lon),
                    yrange = c(region$bl$lat, region$tr$lat))
-pointsMapI <- jorgeMaternIImapI(lambda = intensityF, win = ppWindow,  r = rThin)
-
-
-# Generate the samples to draw the intensity
 timestamp()
-intFrame <- genIntFrame(latis = c(region$bl$lat, region$tr$lat),
-                        longis = c(region$bl$lon, region$tr$lon),
-                        latisLen = latitudeSamples,
-                        longisLen = longitudeSamples, intF = intensityF) 
+pops_th <- jorgeMaternIImapI(lambda = lambIntp, win = ppWindow,  r = rThin)
 timestamp()
 
-# Poisson point process generation for the PoPs
-ppWindow <- owin(xrange = c(region$bl$lon, region$tr$lon),
-                   yrange = c(region$bl$lat, region$tr$lat))
-timestamp()
-pops <- rpoispp(intensityF, win = ppWindow)
-timestamp()
-rThin <- region$repulsionRadius
-timestamp()
-pops_th <- rthin(X = pops, P = rad_thin, r = rThin, nsim = 1, drop=TRUE)
- 
+# for (i in 1:pops_th$n) {
+#   sprintf("(%f, %f)", pops_th[i]$x, pops_th[i]$y)
+#   for (j in 1:pops_th$n) {
+#     if(j != i) {
+#       print(distanceMulti(lat1 = pops_th$y[i], lon1 = pops_th$x[i],
+#                     lat2 = pops_th$y[j], lon2 = pops_th$x[j]))
+#     }
+#   }
+#   print("")
+# }
 
-# Draw the map and the 
+# ##### HARD-CORE MATERNI VERSION #####
+# # Generate the samples to draw the intensity
+# intFrame <- genIntFrame(latis = c(region$bl$lat, region$tr$lat),
+#                         longis = c(region$bl$lon, region$tr$lon),
+#                         latisLen = latitudeSamples,
+#                         longisLen = longitudeSamples, intF = intensityF) 
+# # Poisson point process generation for the PoPs
+# ppWindow <- owin(xrange = c(region$bl$lon, region$tr$lon),
+#                    yrange = c(region$bl$lat, region$tr$lat))
+# pops <- rpoispp(intensityF, win = ppWindow)
+# rThin <- region$repulsionRadius
+# pops_th <- rthin(X = pops, P = rad_thin, r = rThin, nsim = 1, drop=TRUE)
+#  
+# 
+# # Draw the map and the 
+# mapRegion <- c(left = region$bl$lon, bottom = region$bl$lat,
+#                right = region$tr$lon, top = region$tr$lat)
+# map <- get_map(mapRegion, zoom = 13, source = "stamen",
+#               maptype = "toner-lite")
+# #####################################
+
+######### TEMPTATIVE FIX https://github.com/eliocamp/metR/blob/master/R/stat_contour_fill.R#L36
 mapRegion <- c(left = region$bl$lon, bottom = region$bl$lat,
                right = region$tr$lon, top = region$tr$lat)
 map <- get_map(mapRegion, zoom = 13, source = "stamen",
               maptype = "toner-lite")
 
-######### TEMPTATIVE FIX https://github.com/eliocamp/metR/blob/master/R/stat_contour_fill.R#L36
 ggmap(map) + 
   stat_contour_fill(data=intFrame, aes(z=intensity, fill=intensity, color=..level..),
                geom='polygon', alpha=0.2) +
   scale_fill_gradient(low = "gray", high = "black") +
   scale_colour_gradient(low = "gray", high = "black") +
   labs(color = TeX("$\\lambda (u)$")) +
-  geom_point(data = antennasLoc, aes(shape="triangle"))
-#  geom_point(data = data.frame(lat = pops_th$y, lon = pops_th$x),
-#             aes(shape="circle"))
+  geom_point(data = antennasLoc, aes(shape="triangle")) +
+  geom_point(data = data.frame(lat = pops_th$y, lon = pops_th$x),
+             aes(shape="circle"))
 
 
 

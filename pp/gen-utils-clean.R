@@ -129,25 +129,43 @@ genIntMatrix <- function(latis, longis, latisLen, longisLen, intF) {
 }
 
 
+#' @description It transforms the output of genIntMatrix() into a data.frame
+#' @param intMat intensity matrix obtained with genIntMatrix()
+#' @param latAxis latitude axis obtained with genIntMatrix()
+#' @param lonAxis longitude axis obtained with genIntMatrix()
+#' @return data.frame(lon, lat, intensity)
+intMat2Frame <- function(intMat, latAxis, lonAxis) {
+  intensities <- c()
+  longitudes <- c()
+  latitudes <- c()
+  
+  for (row in 1:nrow(intMat)) {
+    intensities <- c(intensities, intMat[row,])
+    longitudes <- c(longitudes, rep(lonAxis[row], length(intMat[row,])))
+    latitudes <- c(latitudes, latAxis)
+  }
+  
+  return(data.frame(lon = longitudes, lat = latitudes, intensity = intensities))
+}
+
+
 #' @description Creates an intensity measure function with a matrix of the
 #' intensity function values along some longitude and latitude axis.
 #' @param intMat matrix with (longitude, latitude) values
 #' @param lonAxis vector of longitudes in the matrix
 #' @param latAxis vector of latitudes in the matrix
-#' @return function that receives (lat, lon) values
+#' @return function that receives (lon, lat) values
 genInterpInt <- function(intMat, lonAxis, latAxis) {
-  lastArgs
-  interpolator<- local({
-    intMat_ <- intMat
-    lonAxis_ <- lonAxis
-    latAxis_ <- latAxis
-    
-    function(lat, lon) {
-      interpVal <- interp2(x = lonAxis_, y = latAxis_, Z = intMat_,
-              xp = lon, yp = lat, method = "linear")
-      return(interpVal)
-    }
+  args <- local({
+    list(intMat = intMat, lonAxis = lonAxis, latAxis = latAxis)
   })
+  
+  interpolator <- function(lon, lat) {
+    # interp2 function states y=rows and x=cols, hence y=longitude x=latitude
+    interpVal <- interp2(x = args$latAxis, y = args$lonAxis, Z = args$intMat,
+            xp = lat, yp = lon, method = "linear")
+    return(interpVal)
+  }
   
   return(interpolator)
 }
@@ -232,6 +250,7 @@ stepIntensity <- function(x, a, b, c, d) {
 #' @param lon2 right longitude
 #' @param lat1 down latitude
 #' @param lat2 up latitudell
+#' @param intensityF intensity function receiving (lon, lat)
 #' @return the average number of points in the rectangle
 inhIntM <- function(lon1, lon2, lat1, lat2, intensityF) {
   return(integral2(intensityF, xmin = lon1, xmax = lon2,
@@ -253,17 +272,23 @@ pairVicentyDist <- function(X) {
 
 
 #' @description Marks a point as the inverse of its intensity
-#' @param lat latitude coord
 #' @param lon longitude coord
-#' @param intF intensity function to evaluate (lat, lon) intensity
-#' @return 1 / intF(lat, lon)
-markI <- function(lat, lon, intF) {
-  return(1 / intF(lat, lon))
+#' @param lat latitude coord
+#' @param intF intensity function to evaluate (lon, lat) intensity
+#' @return 1 / intF(lon, lat)
+markI <- function(lon, lat, intF) {
+  mark <- 1 / intF(lon, lat)
+  
+  # Random number to diferentiate between coordinates with same intensity
+  zeros <- abs(log(mark))
+  rand_ <- runif(1, min = 1e-1*(zeros - 2), max = 1e-1*(zeros - 1))
+  
+  return(mark + rand_)
 }
 
 
 #' @description MaternII thinning based on Vicenty's distance
-#' @param X labeled point pattern object of spatstat
+#' @param X labeled point pattern object of spatstat (x=lon, y=lat)
 #' @return list(lat, lon, marks, n)
 vicentyMatIIthin <- function(X, r) {
   survivorsLat <- c()
@@ -293,7 +318,7 @@ vicentyMatIIthin <- function(X, r) {
     }
   }
   
-  return(list(x = survivorsLat, y = survivorsLon, marks = survivorsMarks,
+  return(list(x = survivorsLon, y = survivorsLat, marks = survivorsMarks,
                     n = length(survivorsLat)))
 }
 
@@ -301,7 +326,7 @@ vicentyMatIIthin <- function(X, r) {
 #' @description generates a MaternII process using the markI labeling.
 #' Marks of points are higher for lower intensity. The process is for points in
 #' maps, and it uses Vicenty's distance for the inhibition.
-#' @param lambda intensity function
+#' @param lambda intensity function receiving (lon, lat)
 #' @param win owin rectangle with the limits
 #' @param r MaternII inhibition radius
 #' @return data.frame(x, y, marks, n)
@@ -316,7 +341,7 @@ jorgeMaternIImapI <- function(lambda, win, r) {
   # Generate the marks for the points
   marks <- c()
   for (i in 1:P$n) {
-    marks <- c(marks, markI(lat = P[i]$y, lon = P[i]$x, lambda))
+    marks <- c(marks, markI(lon = P[i]$x, lat = P[i]$y, lambda))
   }
   Plab <- rlabel(P, labels = marks)
   
