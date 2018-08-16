@@ -40,6 +40,7 @@ getCoords <- function(coordsStr) {
 #'
 #' @return intensity function that is the sum of the centered ones.
 #'         function(latitude, longitude)
+#' @note the centers_intensity must be a radial function
 gen_manta <- function(centers, centers_intensity, factor, ...) {
   # Defines the intensity functions for each center
   center_ints <- list()
@@ -254,7 +255,7 @@ stepIntensity <- function(x, a, b, c, d) {
 #' @return the average number of points in the rectangle
 inhIntM <- function(lon1, lon2, lat1, lat2, intensityF) {
   return(integral2(intensityF, xmin = lon1, xmax = lon2,
-                   ymin = lat1, ymax = lat2))
+                   ymin = lat1, ymax = lat2)$Q)
 }
 
 
@@ -373,12 +374,116 @@ rMaternIImapI <- function(kappa, r, win = owin(c(0,1),c(0,1)), stationary=TRUE,
 }
 
 
-
 #' @description Centered version of the step intensity function stepIntensity()
-#' @param x c variable
+#' @param x radius variable
 #' @param b step width
 #' @param c center section width
 #' @return number
 centStepIntensity <- function(x, b, c) {
   return(stepIntensity(x = x + b + c/2, a = 0, b = b, c = b + c, d = 2*b + c))
+}
+
+
+#' @description Intensity function for the generation of people in a town. It is
+#' based in centStepIntensity function.
+#' @param lon longitude coordinate of evaluation point
+#' @param lat latitude coordinate of evaluation point
+#' @param centLon longitude coordinate of the town center
+#' @param centLat latitude coordinate of the town center
+#' @param b b parameter of the centStepIntensity() function
+#' @param c c parameter of the centStepIntensity() function
+townIntF <- function(lon, lat, centLon, centLat, b, c) {
+  r <- distanceMulti(lat1 = lat, lon1 = lon, lat2 = centLat, lon2 = centLon)
+  
+  return(centStepIntensity(x = r, b = b, c = c))
+}
+
+
+#' @description Obtains the rectangle having the location circle inscribed
+#' @param centLon longitude coordinate of the center circle
+#' @param centLat latitude coordinate of the center circle
+#' @radius circle radius in meters
+#' @return list(latB, latT, lonL, lonR)
+outerRect <- function(centLon, centLat, radius) {
+  latT <- destination(lat = centLat, lon = centLon, bearing = 0,
+                        distance = radius)$lat2
+  latB <- destination(lat = centLat, lon = centLon, bearing = 180,
+                        distance = radius)$lat2
+  lonR <- destination(lat = centLat, lon = centLon, bearing = 90,
+                        distance = radius)$lon2
+  lonL <- destination(lat = centLat, lon = centLon, bearing = 270,
+                        distance = radius)$lon2
+  
+  return(list(latB = latB, latT = latT, lonL = lonL, lonR = lonR))
+}
+
+
+#' @description Obtains the intensity measure of a town whose people points is
+#' generated using centStepIntensity()
+#' @param centLon longitude coordinate for the center of town
+#' @param centLat latitude coordinate for the center of town
+#' @param b step width
+#' @param c center section width
+#' @return the intensity measure of the town
+townIntM <- function(centLon, centLat, b, c) {
+  outRect <- outerRect(centLon, centLat, radius = b + c/2)
+  avgPeople <- integral2(townIntF,
+                         xmin = outRect$lonL, xmax = outRect$lonR,
+                         ymin = outRect$latB, ymax = outRect$latT,
+                         centLon = centLon, centLat = centLat,
+                         b = b, c = c)$Q
+  return(avgPeople)
+}
+
+
+#' @description Generates an intensity function to generate people in towns.
+#' It uses centStepIntensity() function to create the intensity.
+#' @param townCents list(lat = c(), lon = c()) coordinates with the town center
+#' @param townRads radius covering the town
+#' @param townPopus vector with the population of each town
+#' @param townDisps dispersion factor of people outside towns
+#' @note if townDisp[1]=0.5 it means that outside the town, there are
+#' 0.5*townRads[1] kilometers more where people can appear.
+genPopuManta <- function(townCents, townRads, townPopus, townDisps) {
+  townIntensities <- list()
+  intMeasures <- c()
+  
+  # Get the intensity measure for each center
+  for (t in 1:length(townRads)) {
+    intM <- townIntM(centLon = townCents$lon[t],
+                               centLat = townCents$lat[t],
+                               b = townRads[t] * townDisps[t], c = townRads[t])
+    intMeasures <- c(intMeasures, intM)
+  }
+  
+  # Generate the town intensity functions
+  for (t in 1:length(townRads)) {
+    townIntensities[[t]] <- local({
+      centLat <- townCents$lat[t]
+      centLon <- townCents$lon[t]
+      rad <- townRads[t]
+      disp <- townDisps[t]
+      popu <- townPopus[t]
+      intMe <- intMeasures[t]
+      
+      function(lon, lat) {
+        r_ <- distanceMulti(lon1 = lon, lat1 = lat,
+                            lon2 = centLon, lat2 = centLat)
+        b_ <- rad * disp
+        c_ <- rad
+        return(popu / intMe * centStepIntensity(r_, b_, c_))
+      }
+    })
+  }
+  
+  # Final function adding all the intensity functions for the towns
+  sumTownInt <- function(lon, lat) {
+    totalInt <- 0 
+    for (townIntensity in townIntensities) {
+      totalInt <- totalInt + townIntensity(lon, lat)
+    }
+    return(totalInt)
+  }
+  
+  return(sumTownInt)
 }
