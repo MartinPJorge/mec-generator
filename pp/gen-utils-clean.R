@@ -487,3 +487,47 @@ genPopuManta <- function(townCents, townRads, townPopus, townDisps) {
   
   return(sumTownInt)
 }
+
+
+#' @description COST-Hata model for the path loss of a signal
+#' @param fc carrier frequency in MHz
+#' @param hb BS's height in meters
+#' @param hm MS's height in meters
+#' @param distance kilometer distance between user and antenna
+#' @param metropolitan boolean indicating if it is a dense metropolitan area
+#' @return path loss in dBm
+COST231Hata <- function(fc, hb, hm, distance, metropolitan = TRUE) {
+  a <- function(hm, fc, metropolitan) {
+    a_ <- 0
+    
+    if(!metropolitan)
+      a_ <- (1.1 * log10(fc) - 0.7) * hm - 1.56 * log10(fc) - 0.8
+    else if(fc < 400)
+      a_ <- 8.28 * (log10(1.54 * hm))^2 - 1.1 
+    else
+      3.2 * (log10(11.75 * hm))^2 - 4.97
+    
+    return(a_)
+  }
+  
+  A <- 46.3 + 33.9 * log10(fc) - 13.82 * log10(hb) - a(hm)
+  B <- 44.9 - 6.55 * log10(hb)
+  C <- if(metropolitan) 3 else 0
+  
+  return(A + B * log10(distance) + C)
+}
+
+
+#' @description COST 231 Walfisch-Ikegami LOS model for path loss of a signal.
+#' @param fc carrier frequency in MHz
+#' @param distance distance between user and antenna in meters
+#' @return path loss in dB
+#' @note Appropiate for distances between 0.02-5 km and carrier frequencies
+#' between 800 and 2000 MHz. LOS means Line Of Sight, and it assumes no
+#' building between receiver and antenna.
+COST231WalfischIkegamiLOS <- function(fc, distance) {
+  # Distance in formula is in kilometers
+  d <- if(distance < 20) 0.02 else distance / 1000
+  
+  return(42.6 + 26 * log(d) + 20 * log(fc))
+}
