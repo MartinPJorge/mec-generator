@@ -1,3 +1,4 @@
 *.RData
 *.Rhistory
 *.swp
+lat*lon*.json

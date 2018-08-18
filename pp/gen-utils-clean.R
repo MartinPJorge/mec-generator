@@ -489,6 +489,15 @@ genPopuManta <- function(townCents, townRads, townPopus, townDisps) {
 }
 
 
+#' @description Store the population point coordinates in a CSV
+#' @param popuPoints points object from spatstat (x=lon,y=lat)
+#' @param outCSV output CSV file where point coordinates are stored
+popuToCSV <- function(popuPoints, outCSV) {
+  popuCoords <- data.frame(lon = popuPoints$x, lat = popuPoints$y)
+  write.csv(popuCoords, file = outCSV)
+}
+
+
 #' @description COST-Hata model for the path loss of a signal
 #' @param fc carrier frequency in MHz
 #' @param hb BS's height in meters
@@ -531,3 +540,105 @@ COST231WalfischIkegamiLOS <- function(fc, distance) {
   
   return(42.6 + 26 * log(d) + 20 * log(fc))
 }
+
+
+############## GRID UTILITIES ##############
+
+
+#' @description Obtains the limits of the i-th division of the (B - A) interval.
+#' @param A low interval bound
+#' @param B upper interval bound
+#' @param divisionL number of divisions of the (B - A) interval
+#' @return list(a = low limit, b = upper limit)
+getLimits <- function(A, B, divisionL, i) {
+  if(B < A | divisionL < 1 | i < 1)
+    stop("Inside getLimits() I've received B < A, divisionL < 1 or i < 1")
+  return(list(
+    a = A + (B - A) / divisionL * (i - 1),
+    b = A + (B - A) / divisionL * i
+  ))
+}
+
+
+#' @description It obtains the cell inside the grid corresponding to the given
+#' longitude and latitude coordinates.
+#' @param lon longitude coordinate to locate
+#' @param lat latitude coordinate to locate
+#' @param lonL longitude left limit
+#' @param lonR longitude right limit
+#' @param latB latitude botom limit
+#' @param latT latitude top limit
+#' @param lonLen division length of the longitude grid
+#' @param latLen division length of the latitude grid
+#' @return list(x, y) numbering of the associated grid
+#' @note the grids are numbered bottom up and left to right:
+#'  ___ ___ ___
+#' | 4 | 5 | 6 |
+#' |---|---|---|
+#' | 1 | 2 | 3 | < y
+#'  --- --- ---
+#'   ^
+#'   x
+getGrid <- function(lon, lat, lonL, lonR, latB, latT, lonLen, latLen) {
+  if(lon < lonL | lon > lonR)
+    stop("lon coordinate is outside the bounds")
+  if(lat < latB | lat > latT)
+    stop("lat coordinate is outside the bounds")
+  
+  lonSepLen <- (lonR - lonL) / lonLen
+  lonSquare <- if (lon == lonR) lonLen else floor((lon - lonL) / lonSepLen) + 1
+  latSepLen <- (latT - latB) / latLen
+  latSquare <- if (lat == latT) latLen else floor((lat - latB) / latSepLen) + 1
+  
+  return(list(x = lonSquare, y = latSquare))
+}
+
+
+#' @description It divides the antennas' data in a grid
+#' @param antennasCSV CSV file where the antennas' data is present
+#' @param region list(bl, br, tl, tr, repulsionRadius, plotDetails, populations)
+#' @param lonN number of divisions in the longitude axis
+#' @param latN number of divisions in the latitude axis
+#' @param griddedJSON output file name where to store the gridded info.
+gridAntennas <- function(antennasCSV, region, lonN, latN, griddedJSON) {
+  antennas <- read.csv(antennasCSV)
+  gridObj <- list(latB = region$bl$lat, latT = region$tr$lat,
+                  lonL = region$bl$lon, lonR = region$tr$lon,
+                  lonN = lonN, latN = latN)
+  
+  # Initialize the squares structure
+  squares <- list()
+  for (loni in 1:lonN) {
+    lonLims <- getLimits(A = gridObj$lonL, B = gridObj$lonR,
+                         divisionL = lonN, i = loni)
+    squares[[loni]] <- list()
+    for (lati in 1:latN) {
+      latLims <- getLimits(A = gridObj$latB, B = gridObj$latT,
+                           divisionL = latN, i = lati)
+      squares[[loni]][[lati]] <- list(latB = latLims$a, latT = latLims$b,
+                                  lonL = lonLims$a, lonR = lonLims$b,
+                                  antennas = list())
+    }
+  }
+  
+  # Put each antenna inside the corresponding square of the grid
+  for (row in 1:nrow(antennas)) {
+    assocGrid <- getGrid(lon = antennas$lon[row], lat = antennas$lat[row],
+                         lonL = gridObj$lonL, lonR = gridObj$lonR,
+                         latB = gridObj$latB, latT = gridObj$latT,
+                         lonLen = gridObj$lonN, latLen = gridObj$latN)
+    squareX <- assocGrid$x
+    squareY <- assocGrid$y
+    numAntennas <- length(squares[[squareX]][[squareY]]$antennas)
+    squares[[squareX]][[squareY]]$antennas[[numAntennas + 1]] <- list(
+      lon = antennas$lon[row], lat = antennas$lat[row],
+      radio = antennas$radio[row]
+    )
+  }
+  
+  # Write info. to a JSON file
+  gridObj$squares <- squares
+  write(toJSON(gridObj, indent = 4, method = "C"), griddedJSON)
+}
+
+

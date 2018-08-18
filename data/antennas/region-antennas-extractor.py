@@ -1,5 +1,6 @@
 import csv
 import json
+import os
 
 def add_i(row, i):
     if row[0:3] == range(row[0], row[0] +3 * i, i):
@@ -47,7 +48,9 @@ def extractRegion(cellsCSV, region, fields):
     :returns: Nothing
 
     """
-    with open(str(region["id"]) + ".csv", "w") as out_file:
+    regionId = str(region["id"]) 
+    os.mkdir(regionId)
+    with open(regionId + "/" + regionId + ".csv", "w") as out_file:
         writer = csv.DictWriter(out_file, fields)
         writer.writeheader()
         with open(cellsCSV) as csv_file:
@@ -59,7 +62,7 @@ def extractRegion(cellsCSV, region, fields):
 
 
 CELLS_CSV = "spain-cells.csv"
-REGIONS_FILE = "regions.json"
+REGIONS_FILE = "../regions.json"
 
 if __name__ == "__main__":
     fields = []
