@@ -1,37 +1,40 @@
 source("gen-utils-clean.R")
+library(rjson)
 
 # Default global variable
 ANTENNAS <- TRUE
 PEOPLE <- FALSE
 REGIONS <- "../data/regions.json"
-REGION_ANTENNAS <- "../data/antennas/Madrid-center/Madrid-center.csv"
+REGION_CSV <- "../data/antennas/Madrid-center/Madrid-center.csv"
 REGION_NAME <- "Madrid-center"
 LON_N <- 100 # number of divisions in the longitude
 LAT_N <- 100 # number of divisions in the latitude
 
 # Parse arguments if existing to change default global variables
-# if(length(args) > 0)
-#   if(length(args) != 4) {
-#     stop(cat("Arguments to receive are: ",
-#       "antenna|people regionId longitudeN latitudeN"))
-#   } else if(args[1] != "antenna" & args[1] != "people") {
-#     stop("First argument must be 'antenna' or 'people'")
-#   } else {
-#     if(args[1] == "people") {
-#       ANTENNAS <- FALSE
-#       PEOPLE <- TRUE
-#     }
-#     REGION_NAME <- args[2]
-#     REGION_ANTENNAS <- paste("../data/antennas/", REGION_NAME, "/",
-#                            REGION_NAME, ".csv", sep = "")
-#     LON_N <- args[3]
-#     LAT_N <- args[4]
-#   }
-
+args <- commandArgs(trailingOnly=TRUE)
+if(length(args) > 0)
+  if(length(args) != 4) {
+    stop(cat("Arguments to receive are: ",
+      "antenna|people regionId longitudeN latitudeN"))
+  } else if(args[1] != "antenna" & args[1] != "people") {
+    stop("First argument must be 'antenna' or 'people'")
+  } else {
+    REGION_NAME <- args[2]
+    LON_N <- as.numeric(args[3])
+    LAT_N <- as.numeric(args[4])
+    if(args[1] == "people") {
+      ANTENNAS <- FALSE
+      PEOPLE <- TRUE
+      REGION_CSV <- list.files(path = paste("../data/people/", REGION_NAME,
+                                            sep = ""))
+    }
+    REGION_CSV <- paste("../data/antennas/", REGION_NAME, "/",
+                           REGION_NAME, ".csv", sep = "")
+  }
 
 # Load files
 regions <- fromJSON(file = REGIONS)
-regionAntennas <- read.csv(REGION_ANTENNAS)
+regionAntennas <- read.csv(REGION_CSV)
 
 # Find the selected region
 region <- NULL
@@ -56,13 +59,18 @@ if (ANTENNAS) {
   outGriddedJson <- paste(outGriddedJson, "antennas/", 
     REGION_NAME, "/", 
     "lat", toString(LAT_N), "lon", toString(LON_N), ".json", sep = "")
-  gridAntennas(antennasCSV = REGION_ANTENNAS, region = region,
+  gridData(inCSV = REGION_CSV, antennas = TRUE, region = region,
                lonN = LON_N, latN = LAT_N, griddedJSON = outGriddedJson)
 } else {
-  outGriddedJson <- paste(outGriddedJson + "people/" +
-    REGION_NAME + 
-    "/lat", toString(LAT_N), "lon", toString(LON_N), 
-    "/sim", as.numeric(as.POSIXct(Sys.time())), ".json", sep = "")
+  for (i in 1:length(REGION_CSV)) {
+    outGriddedJson <- paste(outGriddedJson, "people/",
+      REGION_NAME,
+      "/lat", toString(LAT_N), "lon", toString(LON_N), 
+      "/sim", as.numeric(as.POSIXct(Sys.time())), "-", toString(i),
+      ".json", sep = "")
+    gridData(inCSV = REGION_CSV[[i]], antennas = TRUE, region = region,
+                 lonN = LON_N, latN = LAT_N, griddedJSON = outGriddedJson)
+  }
 }
 
 

@@ -2,3 +2,4 @@
 *.Rhistory
 *.swp
 lat*lon*.json
+data/people/*/lon*lat*.csv

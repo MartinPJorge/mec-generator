@@ -593,18 +593,66 @@ getGrid <- function(lon, lat, lonL, lonR, latB, latT, lonLen, latLen) {
   return(list(x = lonSquare, y = latSquare))
 }
 
+######### TODO - remove, it's substituted by gridData
+# #' @description It divides the antennas' data in a grid
+# #' @param antennasCSV CSV file where the antennas' data is present
+# #' @param region list(bl, br, tl, tr, repulsionRadius, plotDetails, populations)
+# #' @param lonN number of divisions in the longitude axis
+# #' @param latN number of divisions in the latitude axis
+# #' @param griddedJSON output file name where to store the gridded info.
+# gridAntennas <- function(antennasCSV, region, lonN, latN, griddedJSON) {
+#   antennas <- read.csv(antennasCSV)
+#   gridObj <- list(latB = region$bl$lat, latT = region$tr$lat,
+#                   lonL = region$bl$lon, lonR = region$tr$lon,
+#                   lonN = lonN, latN = latN)
+#   
+#   # Initialize the squares structure
+#   squares <- list()
+#   for (loni in 1:lonN) {
+#     lonLims <- getLimits(A = gridObj$lonL, B = gridObj$lonR,
+#                          divisionL = lonN, i = loni)
+#     squares[[loni]] <- list()
+#     for (lati in 1:latN) {
+#       latLims <- getLimits(A = gridObj$latB, B = gridObj$latT,
+#                            divisionL = latN, i = lati)
+#       squares[[loni]][[lati]] <- list(latB = latLims$a, latT = latLims$b,
+#                                   lonL = lonLims$a, lonR = lonLims$b,
+#                                   antennas = list())
+#     }
+#   }
+#   
+#   # Put each antenna inside the corresponding square of the grid
+#   for (row in 1:nrow(antennas)) {
+#     assocGrid <- getGrid(lon = antennas$lon[row], lat = antennas$lat[row],
+#                          lonL = gridObj$lonL, lonR = gridObj$lonR,
+#                          latB = gridObj$latB, latT = gridObj$latT,
+#                          lonLen = gridObj$lonN, latLen = gridObj$latN)
+#     squareX <- assocGrid$x
+#     squareY <- assocGrid$y
+#     numAntennas <- length(squares[[squareX]][[squareY]]$antennas)
+#     squares[[squareX]][[squareY]]$antennas[[numAntennas + 1]] <- list(
+#       lon = antennas$lon[row], lat = antennas$lat[row],
+#       radio = antennas$radio[row]
+#     )
+#   }
+#   
+#   # Write info. to a JSON file
+#   gridObj$squares <- squares
+#   write(toJSON(gridObj, indent = 4, method = "C"), griddedJSON)
+# }
 
-#' @description It divides the antennas' data in a grid
-#' @param antennasCSV CSV file where the antennas' data is present
+
+#' @description It divides the geographical data in a grid
+#' @param inCSV CSV file where the geographical data is present
 #' @param region list(bl, br, tl, tr, repulsionRadius, plotDetails, populations)
 #' @param lonN number of divisions in the longitude axis
 #' @param latN number of divisions in the latitude axis
 #' @param griddedJSON output file name where to store the gridded info.
-gridAntennas <- function(antennasCSV, region, lonN, latN, griddedJSON) {
-  antennas <- read.csv(antennasCSV)
+gridData <- function(inCSV, antennas = TRUE, region, lonN, latN, griddedJSON) {
+  inData <- read.csv(inCSV)
   gridObj <- list(latB = region$bl$lat, latT = region$tr$lat,
                   lonL = region$bl$lon, lonR = region$tr$lon,
-                  lonN = lonN, latN = latN)
+                  lonN = lonN, latN = latN, assignedDis = FALSE)
   
   # Initialize the squares structure
   squares <- list()
@@ -615,25 +663,36 @@ gridAntennas <- function(antennasCSV, region, lonN, latN, griddedJSON) {
     for (lati in 1:latN) {
       latLims <- getLimits(A = gridObj$latB, B = gridObj$latT,
                            divisionL = latN, i = lati)
-      squares[[loni]][[lati]] <- list(latB = latLims$a, latT = latLims$b,
-                                  lonL = lonLims$a, lonR = lonLims$b,
-                                  antennas = list())
+      if (antennas)
+        squares[[loni]][[lati]] <- list(latB = latLims$a, latT = latLims$b,
+                                    lonL = lonLims$a, lonR = lonLims$b,
+                                    antennas = list())
+      else
+        squares[[loni]][[lati]] <- list(latB = latLims$a, latT = latLims$b,
+                                    lonL = lonLims$a, lonR = lonLims$b,
+                                    people = list())
     }
   }
   
-  # Put each antenna inside the corresponding square of the grid
-  for (row in 1:nrow(antennas)) {
-    assocGrid <- getGrid(lon = antennas$lon[row], lat = antennas$lat[row],
+  # Put each person inside the corresponding square of the grid
+  for (row in 1:nrow(inData)) {
+    assocGrid <- getGrid(lon = inData$lon[row], lat = inData$lat[row],
                          lonL = gridObj$lonL, lonR = gridObj$lonR,
                          latB = gridObj$latB, latT = gridObj$latT,
                          lonLen = gridObj$lonN, latLen = gridObj$latN)
     squareX <- assocGrid$x
     squareY <- assocGrid$y
-    numAntennas <- length(squares[[squareX]][[squareY]]$antennas)
-    squares[[squareX]][[squareY]]$antennas[[numAntennas + 1]] <- list(
-      lon = antennas$lon[row], lat = antennas$lat[row],
-      radio = antennas$radio[row]
-    )
+    squareData <- if (antennas) length(squares[[squareX]][[squareY]]$antennas)
+      else length(squares[[squareX]][[squareY]]$people)
+    if (antennas)
+      squares[[squareX]][[squareY]]$data[[squareData + 1]] <- list(
+        lon = inData$lon[row], lat = inData$lat[row],
+        radio = inData$radio[row]
+      )
+    else
+      squares[[squareX]][[squareY]]$data[[squareData + 1]] <- list(
+        lon = inData$lon[row], lat = inData$lat[row]
+      )
   }
   
   # Write info. to a JSON file
@@ -642,3 +701,13 @@ gridAntennas <- function(antennasCSV, region, lonN, latN, griddedJSON) {
 }
 
 
+
+#' @description It assigns people inside grids to the antennas falling inside
+#' that grid.
+#' @param antennasGridJSON JSON file where antennas' locations are gridded
+#' @param peopleGridJSON JSON file where people's locations are gridded
+#' @note the peopleGridJSON is modified to include the associated antenna inside
+#' each person's object.
+assignAntennas <- function(antennasGridJSON, peopleGridJSON) {
+  
+}
