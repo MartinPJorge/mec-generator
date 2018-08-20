@@ -1,5 +1,9 @@
 *.RData
 *.Rhistory
 *.swp
-lat*lon*.json
+
+# Generated people data
 data/people/*/lon*lat*.csv
+
+# Gridded data
+data/*/*/gridded*

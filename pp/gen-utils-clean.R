@@ -685,12 +685,12 @@ gridData <- function(inCSV, antennas = TRUE, region, lonN, latN, griddedJSON) {
     squareData <- if (antennas) length(squares[[squareX]][[squareY]]$antennas)
       else length(squares[[squareX]][[squareY]]$people)
     if (antennas)
-      squares[[squareX]][[squareY]]$data[[squareData + 1]] <- list(
+      squares[[squareX]][[squareY]]$antennas[[squareData + 1]] <- list(
         lon = inData$lon[row], lat = inData$lat[row],
         radio = inData$radio[row]
       )
     else
-      squares[[squareX]][[squareY]]$data[[squareData + 1]] <- list(
+      squares[[squareX]][[squareY]]$people[[squareData + 1]] <- list(
         lon = inData$lon[row], lat = inData$lat[row]
       )
   }
@@ -701,13 +701,86 @@ gridData <- function(inCSV, antennas = TRUE, region, lonN, latN, griddedJSON) {
 }
 
 
+#' @description Match which people is assigned to each antenna inside a map
+#' square.
+#' @param peopleSquare list of people inside the square (lat, lon)
+#' @param antennasSquare list of  antennas inside the square (lat, lon, radio)
+#' @param regionFreqs list(UMTS, GSM, LTE) with the carrier freqs
+#' @return the people-antennas matching as a
+#' list(lat, lon, antennaLat, antennaLon, antennaRadio, distance, pathLoss)
+matchPeopleAndAntennas <- function(peopleSquare, antennasSquare, regionFreqs) {
+  for (p in 1:length(peopleSquare)) {
+    minPathLoss <- Inf
+    minAntenna <- Inf
+    minDistance <- Inf
+    
+    for (a in 1:length(antennasSquare)) {
+      fc <- get(antennasSquare[[a]]$radio, regionFreqs)
+      d <- distance(lat1 = peopleSquare[[p]]$lat, lon1 = peopleSquare[[p]]$lon,
+                lat2 = antennasSquare[[a]]$lat, lon2 = antennasSquare[[a]]$lon)
+      pathLoss <- COST231WalfischIkegamiLOS(fc = fc, distance = d)
+      
+      if (pathLoss < minPathLoss) {
+        minPathLoss <- pathLoss
+        minAntenna <- a
+        minDistance <- d
+      }
+    }
+    
+    peopleSquare[[p]]$antennaRadio <- antennasSquare[[a]]$radio
+    peopleSquare[[p]]$antennaLat <- antennasSquare[[a]]$lat
+    peopleSquare[[p]]$antennaLon <- antennasSquare[[a]]$lon
+    peopleSquare[[p]]$distance <- minDistance
+    peopleSquare[[p]]$pathLoss <- minPathLoss
+  }
+  
+  return(peopleSquare)
+}
 
+                                               
 #' @description It assigns people inside grids to the antennas falling inside
 #' that grid.
 #' @param antennasGridJSON JSON file where antennas' locations are gridded
 #' @param peopleGridJSON JSON file where people's locations are gridded
+#' @param regionFreqs list(UMTS, GSM, LTE) with the carrier freqs
 #' @note the peopleGridJSON is modified to include the associated antenna inside
 #' each person's object.
-assignAntennas <- function(antennasGridJSON, peopleGridJSON) {
+#' @note if the people has already been assigned, then no assignment is
+#' performed
+assignAntennas <- function(antennasGridJSON, peopleGridJSON, regionFreqs) {
+  griddedAntennas <- fromJSON(file = antennasGridJSON)
+  griddedPeople <- fromJSON(file = peopleGridJSON)
   
+  # Check if distances are already assigned
+  if (griddedPeople$assignedDis) {
+    print("The received peopeGridJSON has already assigned its distances")
+    return()
+  }
+  
+  # Check if the region and sampling longitudes match
+  if (griddedAntennas$lonN != griddedPeople$lonN |
+      griddedAntennas$latN != griddedPeople$latN) {
+    stop("Non matching longitude and latitude gridding in people and atennas\n")
+  }
+  if (griddedAntennas$latB != griddedPeople$latB |
+      griddedAntennas$latT != griddedPeople$latT |
+      griddedAntennas$lonL != griddedPeople$lonL|
+      griddedAntennas$lonR!= griddedPeople$lonR) {
+    stop("Non matching latitude and longitude regions in people and antennas\n")
+  }
+  
+  for (x in 1:length(griddedAntennas$squares)) {
+    for (y in 1:length(griddedAntennas$squares[[x]])) {
+      antennasSquare <- griddedAntennas$squares[[x]][[y]]
+      peopleSquare <- griddedPeople$squares[[x]][[y]]
+      
+      assignedPeopleSquare <- matchPeopleAndAntennas(peopleSquare$people,
+                                                     antennasSquare$antennas,
+                                                     regionFreqs)
+      griddedPeople$squares[[x]][[y]] <- assignedPeopleSquare
+    }
+  }
+  
+  write(toJSON(griddedPeople, indent = 4, method = "C"),
+        paste(unlist(strsplit(peopleGridJSON, "[.]")), "-assigned.json"))
 }

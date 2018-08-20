@@ -5,7 +5,7 @@ library(rjson)
 ANTENNAS <- TRUE
 PEOPLE <- FALSE
 REGIONS <- "../data/regions.json"
-REGION_CSV <- "../data/antennas/Madrid-center/Madrid-center.csv"
+DATA_CSV <- "../data/antennas/Madrid-center/Madrid-center.csv"
 REGION_NAME <- "Madrid-center"
 LON_N <- 100 # number of divisions in the longitude
 LAT_N <- 100 # number of divisions in the latitude
@@ -15,9 +15,9 @@ args <- commandArgs(trailingOnly=TRUE)
 if(length(args) > 0)
   if(length(args) != 4) {
     stop(cat("Arguments to receive are: ",
-      "antenna|people regionId longitudeN latitudeN"))
+      "antenna|people regionId longitudeN latitudeN\n"))
   } else if(args[1] != "antenna" & args[1] != "people") {
-    stop("First argument must be 'antenna' or 'people'")
+    stop("First argument must be 'antenna' or 'people\n'")
   } else {
     REGION_NAME <- args[2]
     LON_N <- as.numeric(args[3])
@@ -25,18 +25,23 @@ if(length(args) > 0)
     if(args[1] == "people") {
       ANTENNAS <- FALSE
       PEOPLE <- TRUE
-      REGION_CSV <- list.files(path = paste("../data/people/", REGION_NAME,
-                                            sep = ""))
+      peopleDir <- paste("../data/people/", REGION_NAME, sep = "")
+      DATA_CSV <- list.files(path = peopleDir, pattern = "*.csv",
+                             full.names = TRUE)
+      if (length(DATA_CSV) == 0) {
+        stop(paste("No people CSVs under: ", peopleDir,
+                   " please execute people-sandbox.R to generate them\n",
+                   sep = ""))
+      }
     }
-    REGION_CSV <- paste("../data/antennas/", REGION_NAME, "/",
-                           REGION_NAME, ".csv", sep = "")
+    else
+      DATA_CSV <- paste("../data/antennas/", REGION_NAME, "/",
+                             REGION_NAME, ".csv", sep = "")
   }
 
-# Load files
-regions <- fromJSON(file = REGIONS)
-regionAntennas <- read.csv(REGION_CSV)
 
 # Find the selected region
+regions <- fromJSON(file = REGIONS)
 region <- NULL
 for (region_ in regions$regions) {
   if (region_$id == REGION_NAME) {
@@ -54,21 +59,22 @@ for (region_ in regions$regions) {
 
 
 ################ START HERE
-outGriddedJson <- "../data/"
 if (ANTENNAS) {
-  outGriddedJson <- paste(outGriddedJson, "antennas/", 
+  outGriddedJson <- paste("../data/antennas/", 
     REGION_NAME, "/", 
-    "lat", toString(LAT_N), "lon", toString(LON_N), ".json", sep = "")
-  gridData(inCSV = REGION_CSV, antennas = TRUE, region = region,
+    "griddedLon", toString(LON_N), "lat", toString(LAT_N), ".json", sep = "")
+  print(paste("Gridding ", DATA_CSV, sep = ""))
+  gridData(inCSV = DATA_CSV, antennas = TRUE, region = region,
                lonN = LON_N, latN = LAT_N, griddedJSON = outGriddedJson)
 } else {
-  for (i in 1:length(REGION_CSV)) {
-    outGriddedJson <- paste(outGriddedJson, "people/",
+  for (i in 1:length(DATA_CSV)) {
+    outGriddedJson <- paste("../data/people/",
       REGION_NAME,
-      "/lat", toString(LAT_N), "lon", toString(LON_N), 
-      "/sim", as.numeric(as.POSIXct(Sys.time())), "-", toString(i),
+      "/griddedLon", toString(LON_N), "lat", toString(LAT_N), 
+      "sim", as.numeric(as.POSIXct(Sys.time())), "-", toString(i),
       ".json", sep = "")
-    gridData(inCSV = REGION_CSV[[i]], antennas = TRUE, region = region,
+    print(paste("Gridding ", DATA_CSV[[i]], sep = ""))
+    gridData(inCSV = DATA_CSV[[i]], antennas = FALSE, region = region,
                  lonN = LON_N, latN = LAT_N, griddedJSON = outGriddedJson)
   }
 }
