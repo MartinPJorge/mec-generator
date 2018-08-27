@@ -17,49 +17,91 @@
                     "population": 132284,
                     "center": "40.416825,-3.706003",
                     "radius": 3300,
-                    "dispersion": 0.001
+                    "dispersion": 0.001,
+                    "smallCells": {
+                        "b": 10,
+                        "c": 100,
+                        "avgSmallCells": 3,
+                        "repulsion": 10
+                    }
                 },
                 {
                     "id": "Arganzuela",
                     "population": 153340,
                     "center": "40.398525,-3.693300",
                     "radius": 1500,
-                    "dispersion": 1
+                    "dispersion": 1,
+                    "smallCells": {
+                        "b": 10,
+                        "c": 100,
+                        "avgSmallCells": 3,
+                        "repulsion": 10
+                    }
                 },
                 {
                     "id": "Retiro",
                     "population": 119375,
                     "center": "40.409505,-3.675104",
                     "radius": 3000,
-                    "dispersion": 0.001
+                    "dispersion": 0.001,
+                    "smallCells": {
+                        "b": 10,
+                        "c": 100,
+                        "avgSmallCells": 3,
+                        "repulsion": 10
+                    }
                 },
                 {
                     "id": "Salamanca",
                     "population": 145471,
                     "center": "40.431199,-3.675619",
                     "radius": 2520,
-                    "dispersion": 0.35
+                    "dispersion": 0.35,
+                    "smallCells": {
+                        "b": 10,
+                        "c": 100,
+                        "avgSmallCells": 3,
+                        "repulsion": 10
+                    }
                 },
                 {
                     "id": "Chamartin",
                     "population": 145380,
                     "center": "40.452787,-3.678279",
                     "radius": 3500,
-                    "dispersion": 0.75
+                    "dispersion": 0.75,
+                    "smallCells": {
+                        "b": 10,
+                        "c": 100,
+                        "avgSmallCells": 3,
+                        "repulsion": 10
+                    }
                 },
                 {
                     "id": "Tetuan",
                     "population": 156596,
                     "center": "40.460492,-3.699555",
                     "radius": 4500,
-                    "dispersion": 0.001
+                    "dispersion": 0.001,
+                    "smallCells": {
+                        "b": 10,
+                        "c": 100,
+                        "avgSmallCells": 3,
+                        "repulsion": 10
+                    }
                 },
                 {
                     "id": "Chamberi",
                     "population": 138877,
                     "center": " 40.436064,-3.703580",
                     "radius": 3300,
-                    "dispersion": 0.2
+                    "dispersion": 0.2,
+                    "smallCells": {
+                        "b": 10,
+                        "c": 100,
+                        "avgSmallCells": 3,
+                        "repulsion": 10
+                    }
                 },
                 {
                     "id": "Mocloa-Aravaca",
@@ -67,7 +109,13 @@
                     "population": 40174,
                     "center": "40.446706,-3.724790",
                     "radius": 3060,
-                    "dispersion": 0.94
+                    "dispersion": 0.94,
+                    "smallCells": {
+                        "b": 10,
+                        "c": 100,
+                        "avgSmallCells": 3,
+                        "repulsion": 10
+                    }
                 }
             ]
         },
@@ -88,7 +136,13 @@
                     "population": 10000,
                     "center": "40.262286,-3.755483",
                     "radius": 2500,
-                    "dispersion": 0.0001
+                    "dispersion": 0.0001,
+                    "smallCells": {
+                        "b": 10,
+                        "c": 100,
+                        "avgSmallCells": 3,
+                        "repulsion": 10
+                    }
                 }
             ]
         },
@@ -109,42 +163,78 @@
                     "population": 5311,
                     "center": "39.060173,-1.057277",
                     "radius": 800,
-                    "dispersion": 2
+                    "dispersion": 2,
+                    "smallCells": {
+                        "b": 10,
+                        "c": 100,
+                        "avgSmallCells": 3,
+                        "repulsion": 10
+                    }
                 },
                 {
                     "id": "Jalance",
                     "population": 852,
                     "center": "39.190473,-1.075826",
                     "radius": 600,
-                    "dispersion": 2
+                    "dispersion": 2,
+                    "smallCells": {
+                        "b": 10,
+                        "c": 100,
+                        "avgSmallCells": 3,
+                        "repulsion": 10
+                    }
                 },
                 {
                     "id": "Cofrentes",
                     "population": 9940,
                     "center": "39.228919,-1.062217",
                     "radius": 600,
-                    "dispersion": 2
+                    "dispersion": 2,
+                    "smallCells": {
+                        "b": 10,
+                        "c": 100,
+                        "avgSmallCells": 3,
+                        "repulsion": 10
+                    }
                 },
                 {
                     "id": "Jarafuel",
                     "population": 785,
                     "center": "39.140755,-1.075526",
                     "radius": 500,
-                    "dispersion": 2
+                    "dispersion": 2,
+                    "smallCells": {
+                        "b": 10,
+                        "c": 100,
+                        "avgSmallCells": 3,
+                        "repulsion": 10
+                    }
                 },
                 {
                     "id": "Teresa-de-Cofrentes",
                     "population": 631,
                     "center": "39.104827,-1.051272",
                     "radius": 400,
-                    "dispersion": 2
+                    "dispersion": 2,
+                    "smallCells": {
+                        "b": 10,
+                        "c": 100,
+                        "avgSmallCells": 3,
+                        "repulsion": 10
+                    }
                 },
                 {
                     "id": "Zarra",
                     "population": 381,
                     "center": "39.091179,-1.075236",
                     "radius": 250,
-                    "dispersion": 2
+                    "dispersion": 2,
+                    "smallCells": {
+                        "b": 10,
+                        "c": 100,
+                        "avgSmallCells": 3,
+                        "repulsion": 10
+                    }
                 }
             ]
         }

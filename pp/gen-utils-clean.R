@@ -402,7 +402,7 @@ townIntF <- function(lon, lat, centLon, centLat, b, c) {
 #' @description Obtains the rectangle having the location circle inscribed
 #' @param centLon longitude coordinate of the center circle
 #' @param centLat latitude coordinate of the center circle
-#' @radius circle radius in meters
+#' @param radius circle radius in meters
 #' @return list(latB, latT, lonL, lonR)
 outerRect <- function(centLon, centLat, radius) {
   latT <- destination(lat = centLat, lon = centLon, bearing = 0,
@@ -708,7 +708,12 @@ gridData <- function(inCSV, antennas = TRUE, region, lonN, latN, griddedJSON) {
 #' @param regionFreqs list(UMTS, GSM, LTE) with the carrier freqs
 #' @return the people-antennas matching as a
 #' list(lat, lon, antennaLat, antennaLon, antennaRadio, distance, pathLoss)
+#' @return NULL if thre is no person or antenna in the square
 matchPeopleAndAntennas <- function(peopleSquare, antennasSquare, regionFreqs) {
+  if (length(peopleSquare) < 1 | length(antennasSquare) < 1) {
+    return(NULL)
+  }
+  
   for (p in 1:length(peopleSquare)) {
     minPathLoss <- Inf
     minAntenna <- Inf
@@ -717,7 +722,8 @@ matchPeopleAndAntennas <- function(peopleSquare, antennasSquare, regionFreqs) {
     for (a in 1:length(antennasSquare)) {
       fc <- get(antennasSquare[[a]]$radio, regionFreqs)
       d <- distance(lat1 = peopleSquare[[p]]$lat, lon1 = peopleSquare[[p]]$lon,
-                lat2 = antennasSquare[[a]]$lat, lon2 = antennasSquare[[a]]$lon)
+                lat2 = antennasSquare[[a]]$lat,
+                lon2 = antennasSquare[[a]]$lon)$distance
       pathLoss <- COST231WalfischIkegamiLOS(fc = fc, distance = d)
       
       if (pathLoss < minPathLoss) {
@@ -734,6 +740,8 @@ matchPeopleAndAntennas <- function(peopleSquare, antennasSquare, regionFreqs) {
     peopleSquare[[p]]$pathLoss <- minPathLoss
   }
   
+  print("len(peopleSquare")
+  print(length(peopleSquare))
   return(peopleSquare)
 }
 
@@ -768,7 +776,10 @@ assignAntennas <- function(antennasGridJSON, peopleGridJSON, regionFreqs) {
       griddedAntennas$lonR!= griddedPeople$lonR) {
     stop("Non matching latitude and longitude regions in people and antennas\n")
   }
-  
+  print("x")
+  print(length(griddedAntennas$squares))
+  print("y")
+  print(length(griddedAntennas$squares[[1]]))
   for (x in 1:length(griddedAntennas$squares)) {
     for (y in 1:length(griddedAntennas$squares[[x]])) {
       antennasSquare <- griddedAntennas$squares[[x]][[y]]
@@ -777,10 +788,130 @@ assignAntennas <- function(antennasGridJSON, peopleGridJSON, regionFreqs) {
       assignedPeopleSquare <- matchPeopleAndAntennas(peopleSquare$people,
                                                      antennasSquare$antennas,
                                                      regionFreqs)
-      griddedPeople$squares[[x]][[y]] <- assignedPeopleSquare
+      if (!is.null(assignedPeopleSquare))
+        griddedPeople$squares[[x]][[y]]$people <- assignedPeopleSquare
     }
   }
   
+  print("a imprimir")
   write(toJSON(griddedPeople, indent = 4, method = "C"),
-        paste(unlist(strsplit(peopleGridJSON, "[.]")), "-assigned.json"))
+        file = "/tmp/a.json")
+  
+  print("dump at:")
+  print(paste(strsplit(peopleGridJSON, ".json")[[1]], "-assigned.json",
+              sep = ""))
+  write(toJSON(griddedPeople, indent = 4, method = "C"),
+        paste(strsplit(peopleGridJSON, ".json")[[1]], "-assigned.json",
+              sep = ""))
 }
+
+
+############## SMALL CELLS UTILITIES ##############
+
+
+#' @description Generates an intensity function f(lon, lat) for the small cell
+#' antennas generation arround a given LTE antenna.
+#' @param lteLon longitude coordinate of the LTE antenna
+#' @param lteLat latitude coordinate of the LTE antenna
+#' @param b b param of the centStepIntensity() 
+#' @param c c param of the centStepIntensity() 
+#' @param avgSmallCells average number of small cells to generate
+#' @note this intensity function generator is based in the centStepIntensity()
+genSmallCellManta <- function(lteLon, lteLat, b, c, avgSmallCells) {
+  genManta <- local({
+    centLon <- lteLon
+    centLat <- lteLat
+    a <- a
+    b <- b
+    c <- c
+    avgPoints <- avgSmallCells
+    intMeasure <- townIntM(centLon = lteLon, centLat = lteLat, b = b, c = c)
+    
+    function(lon, lat) {
+      xs <- distanceMulti(lat1 = lat, lon1 = lon,
+                             lat2 = centLat, lon2 = centLon)
+      return(avgPoints / intMeasure * centStepIntensity(x = xs, b = b, c = c))
+    }
+  })
+  
+  return(genManta)
+}
+
+
+#' @description It reads a JSON file with all the regions' information, and
+#' returns the information related to the regionName
+#' @param regionsFile JSON file with the regions' information
+#' @param regionName string identifying the region to be selected
+#' @return selected region as a list
+selectRegion <- function(regionsFile, regionName) {
+  regions <- fromJSON(file = REGIONS)
+  region <- NULL
+  
+  for (region_ in regions$regions) {
+    if (region_$id == REGION_NAME) {
+      region <- list(id = region_$id,
+                  bl = getCoords(region_$bl),
+                  br = getCoords(region_$br),
+                  tl = getCoords(region_$tl),
+                  tr = getCoords(region_$tr),
+                  repulsionRadius = region_$repulsionRadius,
+                  plotDetails = region_$plotDetails,
+                  populations = region_$populations)
+      break
+    }
+  }
+  
+  return(region)
+}
+
+
+#' @description Finds the associated population object of the passed region
+#' where the coordinates (lon, lat) are located
+#' @param regionList region list object from selectRegion()
+#' @param lon longitude coordinate
+#' @param lat latitude coordinate
+#' @return population list
+findAssocPopulation <- function(regionList, lon, lat) {
+  clostestIndex <- 1
+  closestDistance <- Inf
+  
+  for (p in length(regionList$populations)) {
+    coords <- getCoords(coordsStr = regionList$populations[[p]]$center)
+    dis <- distance(lat1 = lat, lon1 = lon,
+                    lat2 = coords$lat, lon2 = coords$lon)
+    
+    if (dis < closestDistance) {
+      closestDistance <- dis
+      closestIndex <- p
+    }
+  }
+  
+  return(regionList$populations[[p]])
+}
+
+
+#' @description Appends the small cells generated by a point process to an
+#' antenna data.frame
+#' @param antennasDf data.frame with antennas' info from OpenCellID CSV
+#' @param smallCellsPP spatstat point process object with the small cells'
+#' coordinates as (x=lon, y=lat)
+#' @return the merged data.frame
+appendSmallCells <- function(antennasDf, smallCellsPP) {
+  extendedDf <- antennasDf
+  
+  lonIndex <- which(names(antennasDf) == "lon")
+  latIndex <- which(names(antennasDf) == "lat")
+  radioIndex <- which(names(antennasDf) == "radio")
+  
+  for (s in 1:smallCellsPP$n) {
+    smallCellRow <- rep(x = "NA", times = ncol(antennasDf))
+    smallCellRow[lonIndex] <- smallCellsPP[s]$x
+    smallCellRow[latIndex] <- smallCellsPP[s]$y
+    smallCellRow[radioIndex] <- "smallCell"
+    
+    extendedDf <- rbind(extendedDf, smallCellRow)
+  }
+  
+  return(extendedDf)
+}
+
