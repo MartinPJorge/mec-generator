@@ -156,6 +156,8 @@ intMat2Frame <- function(intMat, latAxis, lonAxis) {
 #' @param lonAxis vector of longitudes in the matrix
 #' @param latAxis vector of latitudes in the matrix
 #' @return function that receives (lon, lat) values
+#' @note if the interpolator function receives coordinates outside the axis
+#' limits, it returns 0
 genInterpInt <- function(intMat, lonAxis, latAxis) {
   args <- local({
     list(intMat = intMat, lonAxis = lonAxis, latAxis = latAxis)
@@ -165,6 +167,9 @@ genInterpInt <- function(intMat, lonAxis, latAxis) {
     # interp2 function states y=rows and x=cols, hence y=longitude x=latitude
     interpVal <- interp2(x = args$latAxis, y = args$lonAxis, Z = args$intMat,
             xp = lat, yp = lon, method = "linear")
+    # replace NA values for coords outside grid by zero
+    interpVal <- replace(interpVal, is.na(interpVal), 0)
+    
     return(interpVal)
   }
   
@@ -844,11 +849,11 @@ genSmallCellManta <- function(lteLon, lteLat, b, c, avgSmallCells) {
 #' @param regionName string identifying the region to be selected
 #' @return selected region as a list
 selectRegion <- function(regionsFile, regionName) {
-  regions <- fromJSON(file = REGIONS)
+  regions <- fromJSON(file = regionsFile)
   region <- NULL
   
   for (region_ in regions$regions) {
-    if (region_$id == REGION_NAME) {
+    if (region_$id == regionName) {
       region <- list(id = region_$id,
                   bl = getCoords(region_$bl),
                   br = getCoords(region_$br),

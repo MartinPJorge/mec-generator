@@ -1,5 +1,6 @@
 source("gen-utils-clean.R")
 library(spatstat)
+library(rjson)
 
 
 REGION <- "Cobo-Calleja"
