@@ -264,6 +264,21 @@ inhIntM <- function(lon1, lon2, lat1, lat2, intensityF) {
 }
 
 
+#' @description Calculates the intensity measure of a function within a ball
+#' @param lon ball center longitude coordinate 
+#' @param lat ball center latitude coordinate 
+#' @param r ball radius
+#' @param intensityF intensity function receiving (lon, lat)
+#' @return the average number of points in the ball
+ballIntM <- function(lon, lat, r, intensityF) {
+  shifted <- function(rho, theta) {
+    return(rho * intensityF(lon + rho*cos(theta), lat + rho*sin(theta)))
+  }
+  
+  return(integral2(shifted, xmin = 0, xmax = r, ymin = 0, ymax = 2*pi)$Q)
+}
+
+
 #' @description Obtains the distance matrix of a point pattern using Vicenty's
 #' distance
 #' @param X point pattern of spatstat package
@@ -277,19 +292,28 @@ pairVicentyDist <- function(X) {
 }
 
 
+#' @description It obtains a mark given an intensity function value
+#' @param intFval intensity function value
+#' @return 1 / intF(lon, lat)
+efMarkI <- function(intFval) {
+  mark <- 1 / intFval
+  
+  # Random number to diferentiate between coordinates with same intensity
+  # zeros <- abs(log(mark))
+  # rand_ <- runif(1, min = 1e-1*(zeros - 2), max = 1e-1*(zeros - 1))
+  
+  #return(mark + rand_)
+  return(mark)
+}
+
+
 #' @description Marks a point as the inverse of its intensity
 #' @param lon longitude coord
 #' @param lat latitude coord
 #' @param intF intensity function to evaluate (lon, lat) intensity
 #' @return 1 / intF(lon, lat)
 markI <- function(lon, lat, intF) {
-  mark <- 1 / intF(lon, lat)
-  
-  # Random number to diferentiate between coordinates with same intensity
-  zeros <- abs(log(mark))
-  rand_ <- runif(1, min = 1e-1*(zeros - 2), max = 1e-1*(zeros - 1))
-  
-  return(mark + rand_)
+  return(efMarkI(intF(lon, lat)))
 }
 
 
@@ -337,10 +361,7 @@ vicentyMatIIthin <- function(X, r) {
 #' @param r MaternII inhibition radius
 #' @return data.frame(x, y, marks, n)
 jorgeMaternIImapI <- function(lambda, win, r) {
-  print("jorgeMaternII - gener")
-  timestamp()
   P <- rpoispp(lambda, win = win, nsim = 1)
-  timestamp()
   if(P$n == 0)
     return(P)
   
@@ -813,6 +834,131 @@ assignAntennas <- function(antennasGridJSON, peopleGridJSON, regionFreqs) {
 
 ############## SMALL CELLS UTILITIES ##############
 
+#' @description Calculates Prob(x <= markI(lon, lat)) whith x in
+#' Ball((lon,lat),r)
+#' @param lon ball center longitude coordinate
+#' @param lat ball center latitude coordinate
+#' @param r ball radius
+#' @param intensityF intensity function used for markI
+#' @param rhoStep step length as percentage of r for radius
+#' @param thetaStep step length as percentage of 2*PI
+#' @return a probability number
+#' @note rhoStep and thetaStep must be specified as 1/n, where n is the number
+#' of sampling steps to calculate marks inside the ball
+cdfBallMarkI <- function(lon, lat, r, intensityF, rhoStep, thetaStep) {
+  m <- markI(lon, lat, intensityF)
+  
+  sampleMarks <- c()
+  for (rho_ in seq(from = 0, to = r, by = r*rhoStep)) {
+    for (theta_ in seq(from = 0, to = 2*pi, by = 2*pi*thetaStep)) {
+      sampleMarks <- c(sampleMarks, markI(lon + rho_*cos(theta_),
+                                          lat + rho_*sin(theta_), intensityF))
+    }
+  }
+  
+  return(sum(sampleMarks <= m) / length(sampleMarks))
+}
+
+
+#' @description Approximates the intensity measure of a mattern II hard core
+#' process with markI marks within the rectangle of specified limits.
+#' @param lonL left longitude coordinate for the rectangle
+#' @param lonR right longitude coordinate for the rectangle
+#' @param latB bottom latitude coordinate for the rectangle
+#' @param latT top coordinate for the rectangle
+#' @param r inhibition radius
+#' @param intensityF intensity function associated with the point process
+#' @param rhoStep step length as percentage of r for radius (see cdfBallMarkI)
+#' for more details
+#' @param thetaStep step length as percentage of 2*PI
+#' @return the Q value of the integral2 function
+#' @note the not min probability is approximated as the product of the intensity
+#' measure at a ball, multiplied by 1-F_m(u) where F_m is the marks CDF
+matternIImapIintMapprox1 <- function(lonL, lonR, latB, latT, r, intensityF,
+                                     rhoStep, thetaStep) {
+  integrand2 <- function(lon, lat) {
+    Fm <- cdfBallMarkI(lon, lat, r, intensityF, rhoStep, thetaStep)
+    meanBall <- ballIntM(lon, lat, r, intensityF)
+    
+    probNotMin <- meanBall * Fm
+    
+    return((1 - probNotMin) * intensityF(lon, lat))
+  }
+  
+  return(integral2(integrand2, xmin = lonL, xmax = lonR,
+                          ymin = latB, ymax = latT)$Q)
+}
+
+
+#' @description Approximates the intensity measure of a mattern II hard core
+#' process with markI marks within the rectangle of specified limits.
+#' @param lonL left longitude coordinate for the rectangle
+#' @param lonR right longitude coordinate for the rectangle
+#' @param latB bottom latitude coordinate for the rectangle
+#' @param latT top coordinate for the rectangle
+#' @param r inhibition radius
+#' @param intensityF intensity function associated with the point process
+#' @return the Q value of the integral2 function
+#' @note the not min probability is approximated as the integral of the
+#' intensity function along those points with lower marks inside a ball
+matternIImapIintMapprox2 <- function(lonL, lonR, latB, latT, r, intensityF) {
+  integrand4 <- function(lon, lat) {
+    centMark <- markI(lon, lat, intensityF)
+    
+    filterBigger <- function(rho, theta) {
+      otherLambdas <- intensityF(lon + rho*cos(theta), lat + rho*sin(theta))
+      otherMark <- efMarkI(otherLambdas)
+      otherMark <- replace(otherMark, otherMark >= centMark, 0)
+      indexFunc <- replace(otherMark, otherMark != 0, 1)
+      
+      return(otherLambdas * indexFunc * rho)
+    }
+    
+    probNotMin <- integral2(filterBigger, xmin = 0, xmax = r,
+                            ymin = 0, ymax = 2*pi)$Q
+    
+    return((1 - probNotMin) * intensityF(lon, lat))
+  }
+  
+  return(integral2(integrand4, xmin = lonL, xmax = lonR,
+                          ymin = latB, ymax = latT)$Q)
+}
+
+
+#' @description Approximates the intensity measure of a mattern II hard core
+#' process with markI marks within the rectangle of specified limits.
+#' @param lonL left longitude coordinate for the rectangle
+#' @param lonR right longitude coordinate for the rectangle
+#' @param latB bottom latitude coordinate for the rectangle
+#' @param latT top coordinate for the rectangle
+#' @param r inhibition radius
+#' @param intensityF intensity function associated with the point process
+#' @return the Q value of the integral2 function
+#' @note the probability of x being the minimum at its ball(r) is considered as
+#' Prob(N( A:={x': m(x') < m(x)} ) = 0)
+matternIImapIintMapprox3 <- function(lonL, lonR, latB, latT, r, intensityF) {
+  integrand4 <- function(lon, lat) {
+    centMark <- markI(lon, lat, intensityF)
+    
+    filterBigger <- function(rho, theta) {
+      otherLambdas <- intensityF(lon + rho*cos(theta), lat + rho*sin(theta))
+      otherMark <- efMarkI(otherLambdas)
+      otherMark <- replace(otherMark, otherMark >= centMark, 0)
+      indexFunc <- replace(otherMark, otherMark != 0, 1)
+      
+      return(otherLambdas * indexFunc * rho)
+    }
+    
+    probNotMin <- integral2(filterBigger, xmin = 0, xmax = r,
+                            ymin = 0, ymax = 2*pi)$Q
+    
+    return(exp(-1 * probNotMin) * intensityF(lon, lat))
+  }
+  
+  return(integral2(integrand4, xmin = lonL, xmax = lonR,
+                          ymin = latB, ymax = latT)$Q)
+}
+
 
 #' @description Generates an intensity function f(lon, lat) for the small cell
 #' antennas generation arround a given LTE antenna.
@@ -831,6 +977,54 @@ genSmallCellManta <- function(lteLon, lteLat, b, c, avgSmallCells) {
     c <- c
     avgPoints <- avgSmallCells
     intMeasure <- townIntM(centLon = lteLon, centLat = lteLat, b = b, c = c)
+    
+    function(lon, lat) {
+      xs <- distanceMulti(lat1 = lat, lon1 = lon,
+                             lat2 = centLat, lon2 = centLon)
+      return(avgPoints / intMeasure * centStepIntensity(x = xs, b = b, c = c))
+    }
+  })
+  
+  return(genManta)
+}
+
+
+#' @description Generates an intensity function f(lon, lat) for the small cell
+#' antennas generation arround a given LTE antenna. The generated function is
+#' supposed to be used for a MaternII hard-core process with markI marks.
+#' @param lteLon longitude coordinate of the LTE antenna
+#' @param lteLat latitude coordinate of the LTE antenna
+#' @param b b param of the centStepIntensity() 
+#' @param c c param of the centStepIntensity() 
+#' @param r Matern II inhibition radius
+#' @param avgSmallCells average number of small cells to generate
+#' @param approxM intensity measure approximation method:
+#'        - "approx1" for matternIImapIintMapprox1
+#'        - "approx2" for matternIImapIintMapprox2
+#'        - "approx3" for matternIImapIintMapprox3
+#' @note this intensity function generator is based in the centStepIntensity()
+#' @note if approxM is not correctly specified, approx3 is used
+genMatIImapIsmallCellManta <- function(lteLon, lteLat, b, c, r, avgSmallCells,
+                                       approxM) {
+  genManta <- local({
+    centLon <- lteLon
+    centLat <- lteLat
+    a <- a
+    b <- b
+    c <- c
+    avgPoints <- avgSmallCells
+    
+    oRect <- outerRect(centLon = lteLon, centLat = lteLat, radius = r)
+#' @return list(latB, latT, lonL, lonR)
+    if (approxM == "approx1") {
+      intMeasure <- matternIImapIintMapprox1(lonL = oRect$lonL,
+                                             lonR = oRect$lonR,
+                                             latB = oRect$latB,
+                                             latT = oRect$latT,
+                                             r = r, intensityF = )
+    }
+    intMeasure <- townIntM(centLon = lteLon, centLat = lteLat, b = b,
+                           c = c)
     
     function(lon, lat) {
       xs <- distanceMulti(lat1 = lat, lon1 = lon,
@@ -919,4 +1113,6 @@ appendSmallCells <- function(antennasDf, smallCellsPP) {
   
   return(extendedDf)
 }
+
+
 

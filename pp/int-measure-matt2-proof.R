@@ -7,8 +7,9 @@ ys <- xs
 matLatSamples <- 50
 matLonSamples <- matLatSamples
 win <- owin(xrange = xs, yrange = ys)
+factor <- 100000
 factor <- 1
-n <- 1
+n <- 50
 centers <- data.frame(lon = runif(n = n, min = 0, max = 10),
                       lat = runif(n = n, min = 0, max = 10))
 
@@ -40,7 +41,18 @@ for (i in 1:40) {
   print("itration")
   print(i)
 }
-print(mean(numPoints))
+intMAp1 <- matternIImapIintMapprox1(lonL = win$xrange[1], lonR = win$xrange[2],
+                         latB = win$yrange[1], latT = win$yrange[2],
+                         r = rInhib, intensityF = intpIntF,
+                         rhoStep = 1/10, thetaStep = 1/10)
+intMAp2 <- matternIImapIintMapprox2(lonL = win$xrange[1], lonR = win$xrange[2],
+                         latB = win$yrange[1], latT = win$yrange[2],
+                         r = rInhib, intensityF = intpIntF)
+intMAp3 <- matternIImapIintMapprox3(lonL = win$xrange[1], lonR = win$xrange[2],
+                         latB = win$yrange[1], latT = win$yrange[2],
+                         r = rInhib, intensityF = intpIntF)
+sprintf("AVG: %f -- AP1: %f -- AP2: %f -- AP3: %f", mean(numPoints), intMAp1,
+        intMAp2, intMAp3)
 
 intFCum <- function(lon, lat) {
   m <- 1 / intpIntF(lon, lat)

@@ -35,3 +35,9 @@ De esta página he sacado las bandas usadas en España: https://www.frequencyche
 De aquí ves la información del ministerio de economía y empresa: https://sedeaplicaciones.minetur.gob.es/setsi_regconcesiones/default.aspx
 Diapositivas explicando COST-HATA-Model (diapositiva 22): https://pdfs.semanticscholar.org/presentation/007d/f4b301fbc38b8b0341dfaa0f980788611df2.pdf
 Al final usas COST 231 Walfisch Ikegami Model porque permite distancias más cortas y es sencillo.
+
+
+## Verify approximation
+Tell you use the factor to tweak the function until you've obtained the expected number of small cells (with realistic values). Once you've done that you can try out the approximations (based on F and the integration, i.e., integran3 and integrand4, respectively) to show that they work nice. 
+
+
