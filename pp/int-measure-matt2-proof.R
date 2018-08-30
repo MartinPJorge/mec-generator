@@ -8,23 +8,23 @@ matLatSamples <- 50
 matLonSamples <- matLatSamples
 win <- owin(xrange = xs, yrange = ys)
 factor <- 100000
-factor <- 1
-n <- 50
+# factor <- 1
+n <- 1
 centers <- data.frame(lon = runif(n = n, min = 0, max = 10),
                       lat = runif(n = n, min = 0, max = 10))
 
 
 ###### TRY MULTIPLE density functions ####
-# manta <- gen_manta(centers = centers, centers_intensity = dnorm,
-#                       factor = factor, mean = 0, sd = 200000)
+manta <- gen_manta(centers = centers, centers_intensity = dnorm,
+                      factor = factor, mean = 0, sd = 200000)
 # manta <- gen_manta(centers = centers, centers_intensity = dunif,
 #                       factor = factor, min = 0, max = 200000)
 # manta <- gen_manta(centers = centers, centers_intensity = dgamma,
 #                       factor = factor, shape = 1, scale = 200000)
-manta <- gen_manta(centers = centers, factor = factor,
-                        centers_intensity = stepIntensity,
-                        a = 0, b = 1,
-                        c = 200000, d = 200001)
+# manta <- gen_manta(centers = centers, factor = factor,
+#                         centers_intensity = stepIntensity,
+#                         a = 0, b = 1,
+#                         c = 200000, d = 200001)
 #########################################
 
 

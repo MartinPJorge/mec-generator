@@ -989,47 +989,178 @@ genSmallCellManta <- function(lteLon, lteLat, b, c, avgSmallCells) {
 }
 
 
+#' TODO - not finished its implementation
 #' @description Generates an intensity function f(lon, lat) for the small cell
 #' antennas generation arround a given LTE antenna. The generated function is
 #' supposed to be used for a MaternII hard-core process with markI marks.
+#' @param lteCenters dataframe with lon and lat coordinates of centers
 #' @param lteLon longitude coordinate of the LTE antenna
 #' @param lteLat latitude coordinate of the LTE antenna
-#' @param b b param of the centStepIntensity() 
-#' @param c c param of the centStepIntensity() 
+#' @param b b param of the centStepIntensity()
+#' @param c c param of the centStepIntensity()
 #' @param r Matern II inhibition radius
-#' @param avgSmallCells average number of small cells to generate
+#' @param avgSmallCells average number of small cells to generate 
 #' @param approxM intensity measure approximation method:
 #'        - "approx1" for matternIImapIintMapprox1
 #'        - "approx2" for matternIImapIintMapprox2
 #'        - "approx3" for matternIImapIintMapprox3
+#' @param rhoStep step length as percentage of r for radius
+#' @param thetaStep step length as percentage of 2*PI
 #' @note this intensity function generator is based in the centStepIntensity()
 #' @note if approxM is not correctly specified, approx3 is used
-genMatIImapIsmallCellManta <- function(lteLon, lteLat, b, c, r, avgSmallCells,
-                                       approxM) {
-  genManta <- local({
-    centLon <- lteLon
-    centLat <- lteLat
-    a <- a
-    b <- b
-    c <- c
-    avgPoints <- avgSmallCells
-    
-    oRect <- outerRect(centLon = lteLon, centLat = lteLat, radius = r)
-#' @return list(latB, latT, lonL, lonR)
-    if (approxM == "approx1") {
-      intMeasure <- matternIImapIintMapprox1(lonL = oRect$lonL,
-                                             lonR = oRect$lonR,
-                                             latB = oRect$latB,
-                                             latT = oRect$latT,
-                                             r = r, intensityF = )
-    }
-    intMeasure <- townIntM(centLon = lteLon, centLat = lteLat, b = b,
-                           c = c)
+sgenMatIImapIsmallCellManta <- function(lteLon, lteLat, b, c, r, avgSmallCells,
+                                       approxM, rhoStep = 1/10,
+                                       thetaStep = 1/10) {
+  # Antena intensity function
+  lteIntF <- c(lteIntF, local({
+    lteLon_ <- lteLon
+    lteLat_ <- lteLat
+    b_ <- b
+    c_ <- c
     
     function(lon, lat) {
-      xs <- distanceMulti(lat1 = lat, lon1 = lon,
-                             lat2 = centLat, lon2 = centLon)
-      return(avgPoints / intMeasure * centStepIntensity(x = xs, b = b, c = c))
+      dis <- distanceMulti(lat1 = lat, lon1 = lon,
+                           lat2 = lteLat_, lon2 = lteLon_)
+      return(centStepIntensity(x = dis, b = b_, c = c_))
+    }
+  }))
+  
+  # Obtain the intensity measure for the MatternII markI process
+  lonL <- lteCenters[i,]$lon - (2*b + c)
+  lonR <- lteCenters[i,]$lon + (2*b + c)
+  latB <- lteCenters[i,]$lat - (2*b + c)
+  latT <- lteCenters[i,]$lat + (2*b + c)
+  if (approxM == "approx1") {
+    lteIntMs <- c(lteIntMs, matternIImapIintMapprox1(lonL = lonL, lonR = lonR,
+                                                     latB = latB, latT = latT,
+                                                     r = r,
+                                                     intensityF = lteIntF,
+                                                     rhoStep = rhoStep,
+                                                     thetaStep = thetaStep))
+  } else if(approxM == "approx2") {
+    lteIntMs <- c(lteIntMs, matternIImapIintMapprox2(lonL = lonL, lonR = lonR,
+                                                     latB = latB, latT = latT,
+                                                     r = r,
+                                                     intensityF = lteIntF))
+  } else {
+    lteIntMs <- c(lteIntMs, matternIImapIintMapprox3(lonL = lonL, lonR = lonR,
+                                                     latB = latB, latT = latT,
+                                                     r = r,
+                                                     intensityF = lteIntF))
+  }
+  
+  genManta <- local({
+    lteLon_ <- lteLon
+    lteLat_ <- lteLat
+    avgSmallCells_ <- avgSmallCells
+    lteIntF_ <- lteIntF
+    lteIntMs_ <- lteIntMs
+    bs_ <- bs
+    cs_ <- cs
+    
+    # Add the obtained intensity functions centered at each antenna
+    function(lon, lat) {
+      sumInts <- 0
+      
+      for(i in 1:nrow(lteCenters)) {
+        lteCenter <- lteCenters_[i,]
+        dis <- distanceMulti(lat1 = lat, lon1 = lon,
+                            lat2 = lteCenter$lat, lon2 = lteCenter$lon)
+        sumInts <- sumInts + avgSmallCells_[i] / lteIntMs_[i] *
+          lteIntF_(x = dis, b = bs_[i], c = cs_[i])
+      }
+      
+      return(sumInts)
+    }
+  })
+  
+  return(genManta)
+}
+
+
+#' @description Generates an intensity function f(lon, lat) for the small cell
+#' antennas generation arround a given LTE antennas. The generated function is
+#' supposed to be used for a MaternII hard-core process with markI marks.
+#' @param lteCenters dataframe with lon and lat coordinates of centers
+#' @param bs b param of the centStepIntensity() at each antenna
+#' @param cs c param of the centStepIntensity() at each antenna
+#' @param rs Matern II inhibition radius at each antenna
+#' @param avgSmallCells average number of small cells to generate at each anten
+#' @param approxM intensity measure approximation method:
+#'        - "approx1" for matternIImapIintMapprox1
+#'        - "approx2" for matternIImapIintMapprox2
+#'        - "approx3" for matternIImapIintMapprox3
+#' @param rhoStep step length as percentage of r for radius
+#' @param thetaStep step length as percentage of 2*PI
+#' @note this intensity function generator is based in the centStepIntensity()
+#' @note if approxM is not correctly specified, approx3 is used
+genMatIImapIsmallCellManta <- function(lteCenters, bs, cs, rs, avgSmallCells,
+                                       approxM,
+                                       rhoStep = 1/10, thetaStep = 1/10) {
+  lteIntF <- c()
+  lteIntMs <- c()
+  for (i in 1:nrow(lteCenters)) {
+    # Antena intensity function
+    lteIntF <- c(lteIntF, local({
+      lteCenter <- lteCenters[i,]
+      b <- bs[i]
+      c <- cs[i]
+      
+      function(lon, lat) {
+        dis <- distanceMulti(lat1 = lat, lon1 = lon,
+                             lat2 = lteCenter$lat, lon2 = lteCenter$lon)
+        return(centStepIntensity(x = dis, b = b, c = c))
+      }
+    }))
+    
+    
+    # Obtain the intensity measure for the MatternII markI process
+    rect <- outerRect(centLon = lteCenters[i,]$lon,
+                      centLat = lteCenters[i,]$lat, radius = 2*bs[i] + cs[i])
+    lonL <- rect$lonL
+    lonR <- rect$lonR
+    latB <- rect$latB
+    latT <- rect$latT
+    if (approxM == "approx1") {
+      lteIntMs <- c(lteIntMs, matternIImapIintMapprox1(lonL = lonL, lonR = lonR,
+                                                       latB = latB, latT = latT,
+                                                       r = rs[i],
+                                                       intensityF =
+                                                         lteIntF[[i]],
+                                                       rhoStep = rhoStep,
+                                                       thetaStep = thetaStep))
+    } else if(approxM == "approx2") {
+      lteIntMs <- c(lteIntMs, matternIImapIintMapprox2(lonL = lonL, lonR = lonR,
+                                                       latB = latB, latT = latT,
+                                                       r = rs[i],
+                                                       intensityF =
+                                                         lteIntF[[i]]))
+    } else {
+      lteIntMs <- c(lteIntMs, matternIImapIintMapprox3(lonL = lonL, lonR = lonR,
+                                                       latB = latB, latT = latT,
+                                                       r = rs[i],
+                                                       intensityF =
+                                                         lteIntF[[i]]))
+    }
+  }
+  genManta <- local({
+    lteCenters_ <- lteCenters
+    avgSmallCells_ <- avgSmallCells
+    lteIntF_ <- lteIntF
+    lteIntMs_ <- lteIntMs
+    bs_ <- bs
+    cs_ <- cs
+    
+    # Add the obtained intensity functions centered at each antenna
+    function(lon, lat) {
+      sumInts <- 0
+      
+      for(i in 1:nrow(lteCenters)) {
+        sumInts <- sumInts + avgSmallCells_[i] / lteIntMs_[i] *
+          lteIntF_[[i]](lon, lat)
+      }
+      
+      return(sumInts)
     }
   })
   
@@ -1077,7 +1208,7 @@ findAssocPopulation <- function(regionList, lon, lat) {
   for (p in length(regionList$populations)) {
     coords <- getCoords(coordsStr = regionList$populations[[p]]$center)
     dis <- distance(lat1 = lat, lon1 = lon,
-                    lat2 = coords$lat, lon2 = coords$lon)
+                    lat2 = coords$lat, lon2 = coords$lon)$distance
     
     if (dis < closestDistance) {
       closestDistance <- dis
@@ -1096,16 +1227,29 @@ findAssocPopulation <- function(regionList, lon, lat) {
 #' coordinates as (x=lon, y=lat)
 #' @return the merged data.frame
 appendSmallCells <- function(antennasDf, smallCellsPP) {
+  addSmallCell <- function(x){
+    if(is.factor(x)) return(factor(x, levels=c(levels(x), "smallCell")))
+    return(x)
+  }
+  
+  if (smallCellsPP$n == 0) {
+    return(antennasDf)
+  }
   extendedDf <- antennasDf
   
   lonIndex <- which(names(antennasDf) == "lon")
   latIndex <- which(names(antennasDf) == "lat")
   radioIndex <- which(names(antennasDf) == "radio")
   
+  # Check if the small cell level is present
+  if (length(which(levels(extendedDf$radio) == "LTE")) == 0) {
+    extendedDf <- as.data.frame(lapply(extendedDf, addSmallCell))
+  }
+  
   for (s in 1:smallCellsPP$n) {
     smallCellRow <- rep(x = "NA", times = ncol(antennasDf))
-    smallCellRow[lonIndex] <- smallCellsPP[s]$x
-    smallCellRow[latIndex] <- smallCellsPP[s]$y
+    smallCellRow[lonIndex] <- smallCellsPP$x[s]
+    smallCellRow[latIndex] <- smallCellsPP$y[s]
     smallCellRow[radioIndex] <- "smallCell"
     
     extendedDf <- rbind(extendedDf, smallCellRow)

@@ -25,27 +25,37 @@ antennasCSV <- read.csv(paste("../data/antennas/", REGION, "/", REGION, ".csv",
 lteAntennas <- subset(antennasCSV, antennasCSV$radio == "LTE")
 
 
-# Generate small cells around LTE antennas
+# Generate small-cell antennas arround LTE ones
 extendedAntennas <- lteAntennas
+genSmallCells <- c()
 for (row in 1:nrow(lteAntennas)) {
+  print(row)
+  # Find assoc population and generate intensity function for the antenna
   popu <- findAssocPopulation(regionList = region, lon = lteAntennas[row,]$lon,
                       lat = lteAntennas[row,]$lat)
-  smallCellInt <- genSmallCellManta(lteLon = lteAntennas[row,]$lon,
-                             lteLat = lteAntennas[row,]$lat,
-                             b = popu$smallCells$b, c = popu$smallCells$c,
-                             avgSmallCells = popu$smallCells$avgSmallCells)
+  smallCellsManta <- genMatIImapIsmallCellManta(
+    lteCenters = data.frame(lon = lteAntennas[row,]$lon,
+                            lat = lteAntennas[row,]$lat),
+    bs = c(popu$smallCells$b), cs = c(popu$smallCells$c),
+    rs = c(popu$smallCells$repulsion),
+    avgSmallCells = c(popu$smallCells$avgSmallCells), approxM = "approx3")
   
-  popou
-  popuRect <- outerRect(centLon = popuCent$lon, centLat = popuCent$lat,
-                        radius = popu$radius)
-  popuWin <- owin(xrange = c(popuRect$lonL, popuRect$lonR),
-                  yrange = c(popuRect$latB, popuRect$latT))
-  smallCells <- jorgeMaternIImapI(lambda = smallCellInt, win = popuWin,
+  # Generate the small-cells
+  stepFrad <- popu$smallCells$b*2 + popu$smallCells$c
+  antennaRect <- outerRect(centLon = lteAntennas[row,]$lon,
+                           centLat = lteAntennas[row,]$lat,
+                           radius = stepFrad)
+  antennaWin <- owin(xrange = c(antennaRect$lonL, antennaRect$lonR),
+                  yrange = c(antennaRect$latB, antennaRect$latT))
+  smallCells <- jorgeMaternIImapI(lambda = smallCellsManta, win = antennaWin,
                                   r = popu$smallCells$repulsion)
+  genSmallCells <- c(genSmallCells, smallCells$n)
   
+  # Append the generated small-cell antennas
   extendedAntennas <- appendSmallCells(antennasDf = extendedAntennas,
                                        smallCellsPP = smallCells)
 }
+
 
 
 
