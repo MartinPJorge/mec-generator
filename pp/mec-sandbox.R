@@ -9,11 +9,13 @@ library(metR)
 
 REGIONS <- "../data/regions.json"
 # REGION_NAME <- "Madrid-center"
-# REGION <- "../data/Madrid-center/Madrid-center.csv"
-REGION_NAME <- "Cobo-Calleja"
-REGION <- "../data/Cobo-Calleja/Cobo-Calleja.csv"
+# REGION <- "../data/antennas/Madrid-center/Madrid-center.csv"
+# REGION_NAME <- "Cobo-Calleja"
+# REGION <- "../data/antennas/Cobo-Calleja/Cobo-Calleja.csv"
 # REGION_NAME <- "Valle-Ayora-Cofrentes"
-# REGION <- "../data/Valle-Ayora-Cofrentes/Valle-Ayora-Cofrentes.csv"
+# REGION <- "../data/antennas/Valle-Ayora-Cofrentes/Valle-Ayora-Cofrentes.csv"
+REGION_NAME <- "Hoces-del-Cabriel"
+REGION <- "../data/antennas/Hoces-del-Cabriel/Hoces-del-Cabriel.csv"
 
 # Load files
 regions <- fromJSON(file = REGIONS)
@@ -121,6 +123,6 @@ ggmap(map) +
 map <- get_map(mapRegion, zoom = 13, source = "stamen",
               maptype = "toner-lite")
 ggmap(map) + 
-  geom_point(data = antennasLoc, shape = 17)
+  geom_point(data = antennasLoc, shape = 17, size = 3)
 
 

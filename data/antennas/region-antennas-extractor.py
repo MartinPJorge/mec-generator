@@ -49,7 +49,8 @@ def extractRegion(cellsCSV, region, fields):
 
     """
     regionId = str(region["id"]) 
-    os.mkdir(regionId)
+    if not os.path.exists(regionId):
+        os.mkdir(regionId)
     with open(regionId + "/" + regionId + ".csv", "w") as out_file:
         writer = csv.DictWriter(out_file, fields)
         writer.writeheader()

@@ -1225,8 +1225,9 @@ findAssocPopulation <- function(regionList, lon, lat) {
 #' @param antennasDf data.frame with antennas' info from OpenCellID CSV
 #' @param smallCellsPP spatstat point process object with the small cells'
 #' coordinates as (x=lon, y=lat)
+#' @param operatorNET the operator net code (by default is Telefonica's one)
 #' @return the merged data.frame
-appendSmallCells <- function(antennasDf, smallCellsPP) {
+appendSmallCells <- function(antennasDf, smallCellsPP, operatorNET = 7) {
   addSmallCell <- function(x){
     if(is.factor(x)) return(factor(x, levels=c(levels(x), "smallCell")))
     return(x)
@@ -1240,6 +1241,7 @@ appendSmallCells <- function(antennasDf, smallCellsPP) {
   lonIndex <- which(names(antennasDf) == "lon")
   latIndex <- which(names(antennasDf) == "lat")
   radioIndex <- which(names(antennasDf) == "radio")
+  netIndex <- which(names(antennasDf) == "net")
   
   # Check if the small cell level is present
   if (length(which(levels(extendedDf$radio) == "LTE")) == 0) {
@@ -1251,6 +1253,7 @@ appendSmallCells <- function(antennasDf, smallCellsPP) {
     smallCellRow[lonIndex] <- smallCellsPP$x[s]
     smallCellRow[latIndex] <- smallCellsPP$y[s]
     smallCellRow[radioIndex] <- "smallCell"
+    smallCellRow[netIndex] <- operatorNET
     
     extendedDf <- rbind(extendedDf, smallCellRow)
   }
@@ -1259,4 +1262,48 @@ appendSmallCells <- function(antennasDf, smallCellsPP) {
 }
 
 
+#' @description Line between coordinates a and b
+#' @param x longitude coordinate
+#' @param a list with $lon and $lat values
+#' @param b list with $lon and $lat values
+#' @return latitude value for x longitude to get a point (x,y) falling inside
+#' the line joining a and b
+coordsLine <- function(x, a, b) {
+  return((x - a$lon) / (b$lon - a$lon) * (b$lat - a$lat) + a$lat)
+}
+
+
+#' @description Gives the road latitudes associated with the given points when
+#' the road line is approximated as the lines joinning the list of points.
+#' @param pointsLongitudes longitudes of the points
+#' @param milestones breakpoints along the road as a list[[index]] of $lon $lat
+#' @return a data.frame of $lon $lat as the points along the road
+#' @return NULL if the pointLongitudes do not fall within the milestones
+#' @note the milestones and pointsLongitudes parameters must be ordered by
+#' longitude in ascending order
+roadLatitudes <- function(pointsLongitudes, milestones) {
+  nLons <- length(pointsLongitudes)
+  nMilestones <- length(milestones)
+  if (pointsLongitudes[1] < milestones[[1]]$lon |
+      pointsLongitudes[nLons] > milestones[[nMilestones]]$lon) {
+    return(NULL)
+  }
+  
+  mappedLatitudes <- c()
+  m <- 1 # milestone index
+  for (i in 1:length(pointsLongitudes)) {
+    pLon <- pointsLongitudes[i]
+    
+    # Find the next milestone if point is not between current ones
+    while (pLon > milestones[[m + 1]]$lon & m <= length(milestones)) {
+      m <- m + 1
+    }
+    
+    mappedLatitudes <- c(mappedLatitudes,
+                         coordsLine(x = pLon, a = milestones[[m]],
+                                    b = milestones[[m + 1]]))
+  }
+  
+  return(data.frame(lon = pointsLongitudes, lat = mappedLatitudes))
+}
 

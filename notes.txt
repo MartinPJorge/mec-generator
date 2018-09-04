@@ -41,3 +41,28 @@ Al final usas COST 231 Walfisch Ikegami Model porque permite distancias más cor
 Tell you use the factor to tweak the function until you've obtained the expected number of small cells (with realistic values). Once you've done that you can try out the approximations (based on F and the integration, i.e., integran3 and integrand4, respectively) to show that they work nice. 
 
 
+## Censo de pueblos en Castilla la Mancha
+http://www.ies.jccm.es/estadisticas/por-tema/poblacion/padrones-municipales/
+
+
+
+## ¿Qué es small-cell y qué macro-cell?
+femto-cell = [eMBB-indoorHotspot] # solo en el caso de urban por el hecho de que por cada planta tienes una antenna
+
+- la repulsión no aplica para las femto-cell (va a haber una por planta)
+- el resto de tráfico es soportado por macro-cells (ahí si ponemos repulsión)
+
+OJO - sacar el #AAU per area unit(km^2) que corresponde a femto-cell y a macro-cell
+
+[...] For instance, a service dimension area for the
+indoor hotspot is 0.040. This result is obtained by considering a
+tall building with 15 floors with a base of 0.2x0.2 Km2. The
+total bandwidth to provide would be 600 Gbps spread over the
+15 floors, thus 40 Gbps on each floor. As a result, 4 AAUs per
+floor are required, considering a peak data rate of 10 Gbps for
+the AAU. A total of 72 AAUs are hence required to cover [...]
+
+
+
+
+

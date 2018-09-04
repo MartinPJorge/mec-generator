@@ -147,6 +147,314 @@
             ]
         },
         {
+            "id": "Hoces-del-Cabriel",
+            "bl": "39.435087,-1.841545",
+            "br": "39.435087,-1.338232",
+            "tr": "39.674813,-1.338232",
+            "tl": "39.674813,-1.841545",
+            "repulsionRadius": 1000,
+            "plotDetails": {
+                "zoom": 12,
+                "mapType": "toner"
+            },
+            "A3Markpoints": [
+                {
+                    "lat": 39.534910,
+                    "lon": -1.896147
+                },
+                {
+                    "lat": 39.530465,
+                    "lon": -1.866586
+                },
+                {
+                    "lat": 39.531833,
+                    "lon": -1.840829
+                },
+                {
+                    "lat": 39.524459,
+                    "lon": -1.813341
+                },
+                {
+                    "lat": 39.523960,
+                    "lon": -1.788622
+                },
+                {
+                    "lat": 39.519967,
+                    "lon": -1.775949
+                },
+                {
+                    "lat": 39.515538,
+                    "lon": -1.731635
+                },
+                {
+                    "lat": 39.515545,
+                    "lon": -1.719624
+                },
+                {
+                    "lat": 39.509201,
+                    "lon": -1.695944
+                },
+                {
+                    "lat": 39.509201,
+                    "lon": -1.695944
+                },
+                {
+                    "lat": 39.509733,
+                    "lon": -1.645507
+                },
+                {
+                    "lat": 39.516345,
+                    "lon": -1.623887
+                },
+                {
+                    "lat": 39.514480,
+                    "lon": -1.598837
+                },
+                {
+                    "lat": 39.529289,
+                    "lon": -1.576170
+                },
+                {
+                    "lat": 39.529522,
+                    "lon": -1.542528
+                },
+                {
+                    "lat": 39.529522,
+                    "lon": -1.542528
+                },
+                {
+                    "lat": 39.550919,
+                    "lon": -1.503680
+                },
+                {
+                    "lat": 39.539561,
+                    "lon": -1.482049
+                },
+                {
+                    "lat": 39.526726,
+                    "lon": -1.445003
+                },
+                {
+                    "lat": 39.529079,
+                    "lon": -1.430222
+                },
+
+                {
+                    "lat": 39.526145,
+                    "lon": -1.408585
+                },
+                {
+                    "lat": 39.534801,
+                    "lon": -1.373543
+                },
+                {
+                    "lat": 39.534779,
+                    "lon": -1.353964
+                },
+                {
+                    "lat": 39.542692,
+                    "lon": -1.328867
+                }
+            ],
+            "populations": [
+                {
+                    "id": "Campillo-de-Altobuey",
+                    "population": 1379,
+                    "center": "39.61184419984185,-1.7965687354736701",
+                    "radius": 800,
+                    "dispersion": 0.0001,
+                    "smallCells": {
+                        "b": 10,
+                        "c": 100,
+                        "avgSmallCells": 3,
+                        "repulsion": 10
+                    }
+                },
+                {
+                    "id": "Castillejo-de-Iniesta",
+                    "population": 160,
+                    "center": "39.524889364415415,-1.7618701126993983",
+                    "radius": 350,
+                    "dispersion": 0.0001,
+                    "smallCells": {
+                        "b": 10,
+                        "c": 100,
+                        "avgSmallCells": 3,
+                        "repulsion": 10
+                    }
+                },
+                {
+                    "id": "Iniesta",
+                    "population": 4337,
+                    "center": "39.44560290015558,-1.7477347525373261",
+                    "radius": 1000,
+                    "dispersion": 0.0001,
+                    "smallCells": {
+                        "b": 10,
+                        "c": 100,
+                        "avgSmallCells": 3,
+                        "repulsion": 10
+                    }
+                },
+                {
+                    "id": "Puebla-del-Salvador",
+                    "population": 192,
+                    "center": "39.56525367546507,-1.6751657565918094",
+                    "radius": 400,
+                    "dispersion": 0.0001,
+                    "smallCells": {
+                        "b": 10,
+                        "c": 100,
+                        "avgSmallCells": 3,
+                        "repulsion": 10
+                    }
+                },
+                {
+                    "id": "Graja-de-Iniesta",
+                    "population": 365,
+                    "center": "39.517790128407995,-1.6709264137564332",
+                    "radius": 500,
+                    "dispersion": 0.0001,
+                    "smallCells": {
+                        "b": 10,
+                        "c": 100,
+                        "avgSmallCells": 3,
+                        "repulsion": 10
+                    }
+                },
+                {
+                    "id": "Villarta",
+                    "population": 365,
+                    "center": "39.44106618984953,-1.6513741164551448",
+                    "radius": 829,
+                    "dispersion": 0.0001,
+                    "smallCells": {
+                        "b": 10,
+                        "c": 100,
+                        "avgSmallCells": 3,
+                        "repulsion": 10
+                    }
+                },
+                {
+                    "id": "Villapardo",
+                    "population": 976,
+                    "center": "39.471965490836176,-1.624727437957631",
+                    "radius": 500,
+                    "dispersion": 0.0001,
+                    "smallCells": {
+                        "b": 10,
+                        "c": 100,
+                        "avgSmallCells": 3,
+                        "repulsion": 10
+                    }
+                },
+                {
+                    "id": "Enguidanos",
+                    "population": 331,
+                    "center": "39.673385477663516,-1.6063214367022738",
+                    "radius": 500,
+                    "dispersion": 0.0001,
+                    "smallCells": {
+                        "b": 10,
+                        "c": 100,
+                        "avgSmallCells": 3,
+                        "repulsion": 10
+                    }
+                },
+                {
+                    "id": "Minglanilla",
+                    "population": 2232,
+                    "center": "39.535851501108695,-1.598111758333289",
+                    "radius": 500,
+                    "dispersion": 0.0001,
+                    "smallCells": {
+                        "b": 10,
+                        "c": 100,
+                        "avgSmallCells": 3,
+                        "repulsion": 10
+                    }
+                },
+                {
+                    "id": "La-Pesquera",
+                    "population": 200,
+                    "center": "39.5732761841529,-1.5853037904867051",
+                    "radius": 400,
+                    "dispersion": 0.0001,
+                    "smallCells": {
+                        "b": 10,
+                        "c": 100,
+                        "avgSmallCells": 3,
+                        "repulsion": 10
+                    }
+                },
+                {
+                    "id": "La-Canada-de-Mira",
+                    "population": 929,
+                    "center": "39.657574963591486,-1.4540467867902862",
+                    "radius": 300,
+                    "dispersion": 0.0001,
+                    "smallCells": {
+                        "b": 10,
+                        "c": 100,
+                        "avgSmallCells": 3,
+                        "repulsion": 10
+                    }
+                },
+                {
+                    "id": "Villagordo-del-Cabriel",
+                    "population": 612,
+                    "center": "39.535822302082266,-1.4404786188655407",
+                    "radius": 500,
+                    "dispersion": 0.0001,
+                    "smallCells": {
+                        "b": 10,
+                        "c": 100,
+                        "avgSmallCells": 3,
+                        "repulsion": 10
+                    }
+                },
+                {
+                    "id": "Camporrobles",
+                    "population":  1217,
+                    "center": "39.64703316480996,-1.4033648965864813",
+                    "radius": 700,
+                    "dispersion": 0.0001,
+                    "smallCells": {
+                        "b": 10,
+                        "c": 100,
+                        "avgSmallCells": 3,
+                        "repulsion": 10
+                    }
+                },
+                {
+                    "id": "Fuenterrobles",
+                    "population":  709,
+                    "center": "39.58487030459396,-1.3643278115982866",
+                    "radius": 400,
+                    "dispersion": 0.0001,
+                    "smallCells": {
+                        "b": 10,
+                        "c": 100,
+                        "avgSmallCells": 3,
+                        "repulsion": 10
+                    }
+                },
+                {
+                    "id": "Venta-del-Moro",
+                    "population": 1277,
+                    "center": "39.48482426256141,-1.3648929278779178",
+                    "radius": 4500,
+                    "dispersion": 0.0001,
+                    "smallCells": {
+                        "b": 10,
+                        "c": 100,
+                        "avgSmallCells": 3,
+                        "repulsion": 10
+                    }
+                }
+            ]
+        },
+        {
             "id": "Valle-Ayora-Cofrentes",
             "bl": "39.031198,-1.149814",
             "br": "39.031198,-0.922680",
