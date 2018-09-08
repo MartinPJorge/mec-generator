@@ -960,6 +960,59 @@ matternIImapIintMapprox3 <- function(lonL, lonR, latB, latT, r, intensityF) {
 }
 
 
+destinationMulti <- function(lon, lat, bearings, distances) {
+  des <- c()
+  lon1s <- c()
+  lon2s <- c()
+  lat1s <- c()
+  lat2s <- c()
+  distances_ <- c()
+  for (i in 1:length(bearings)) {
+    des <- destination(lon = lon, lat = lat, bearing = bearings[i],
+                              distance = distances[i])
+    lon1s <- c(lon1s, des$lon1)
+    lon2s <- c(lon2s, des$lon2)
+    lat1s <- c(lat1s, des$lat1)
+    lat2s <- c(lat2s, des$lat2)
+    distances_ <- c(distances_, des$distance)
+  }
+  return(data.frame(lon1 = lon1s, lat1 = lat1s, lon2 = lon2s, lat2 = lat2s,
+                    distance = distances_))
+}
+
+matternIImapIintMapprox3_V <- function(lonL, lonR, latB, latT, r, intensityF) {
+  integrand4 <- function(lon, lat) {
+    probNotMin <- c()
+    for (i in 1:length(lon)) {
+      lon_ <- lon[i]
+      lat_ <- lat[i]
+      centMark <- markI(lon_, lat_, intensityF)
+      
+      filterBigger <- function(rho, theta) {
+        pD <- destinationMulti(lon = lon_, lat = lat_, bearing = theta, distance = rho)
+        hipot <- sqrt((pD$lon1 - pD$lon2)^2 + (pD$lat1 - pD$lat2)^2)
+        
+        otherLambdas <- intensityF(pD$lon2, pD$lat2)
+        otherMark <- efMarkI(otherLambdas)
+        otherMark <- replace(otherMark, otherMark >= centMark, 0)
+        indexFunc <- replace(otherMark, otherMark != 0, 1)
+        
+        return(otherLambdas * indexFunc * hipot)
+      }
+      
+      probNotMin <- c(probNotMin,
+                      integral2(filterBigger, xmin = 0, xmax = r,
+                            ymin = 0, ymax = 2*pi)$Q)
+    }
+    
+    return(exp(-1 * probNotMin) * intensityF(lon, lat))
+  }
+  
+  return(integral2(integrand4, xmin = lonL, xmax = lonR,
+                          ymin = latB, ymax = latT)$Q)
+}
+
+
 #' @description Generates an intensity function f(lon, lat) for the small cell
 #' antennas generation arround a given LTE antenna.
 #' @param lteLon longitude coordinate of the LTE antenna
@@ -1262,6 +1315,25 @@ appendSmallCells <- function(antennasDf, smallCellsPP, operatorNET = 7) {
 }
 
 
+#' @description It appends antennas to an existing antennas data.frame
+#' @param antennas data.frame with $radio, $lon, $lat, $net
+#' @param newAntennas data.frame with $lon and $lat
+#' @param newRadio radio type of the newAntennas antennas
+#' @param newNetOperator operator net code of the newAntennas antennas
+#' @note the function can only add antennas of the same radio technology, and of
+#' the same operator
+manualAntennaAppend <- function(antennas, newAntennas, newRadio,
+                                newNetOperator = 7) {
+  allLons <- c(antennas$lon, newAntennas$lon)
+  allLats <- c(antennas$lat, newAntennas$lat)
+  allRadio <- c(as.character(antennas$radio), rep(newRadio, nrow(newAntennas)))
+  allOperator <- c(antennas$net, rep(newNetOperator, nrow(newAntennas)))
+  
+  return(data.frame(radio = allRadio, net = allOperator, lon = allLons,
+                    lat = allLats))
+}
+
+
 #' @description Line between coordinates a and b
 #' @param x longitude coordinate
 #' @param a list with $lon and $lat values
@@ -1307,3 +1379,110 @@ roadLatitudes <- function(pointsLongitudes, milestones) {
   return(data.frame(lon = pointsLongitudes, lat = mappedLatitudes))
 }
 
+
+#' @description Obtains the CDF of the values present in a matrix
+#' @param matrix the matrix
+#' @param samples number of values to use for the CDF between min and max
+#' @return data.frame(values = ..., cdfProbs = ...)
+matrixCDF <- function(matrix, samples) {
+  values <- seq(from = min(matrix), to = max(matrix), length.out = samples)
+  cdfProbs <- c()
+  
+  for (val in values) {
+    cdfProbs <- c(cdfProbs, sum(matrix <= val))
+  }
+  
+  return(data.frame(values = values, cdfProbs = cdfProbs / length(matrix)))
+}
+
+
+#' @description Rescales the values of a matrix to the interval (A,B)
+#' @param toA A value of rescale interval
+#' @param toB B value of rescale interval
+#' @return the reescale matrix with values between A and B
+rescaleRange <- function(matrix, toA, toB) {
+  minM <- min(matrix)
+  maxM <- max(matrix)
+  
+  return((matrix - minM) / (maxM - minM) * (toB - toA) + toA)
+}
+
+
+#' @description Obtains the sides of a square in a map to get the asked area.
+#' @param topLat top latitude for the square
+#' @param area area of the square given in square kilometers unit
+#' @return list(lonSize, latSize)
+findSquare <- function(topLat, area) {
+  side <- sqrt(area * 1000^2) # from square kilometers to square meters
+  bottomLat <- destination(lat = topLat, lon = 0, bearing = 180,
+              distance = side)$lat2
+  
+  lonSizeTop <- destination(lat = topLat, lon = 0, bearing = 90,
+                            distance = side)$lon2
+  lonSizeBottom <- destination(lat = bottomLat, lon = 0, bearing = 90,
+                            distance = side)$lon2
+  lonSize <- (lonSizeTop + lonSizeBottom) / 2
+  
+  return(list(lonSize = lonSize, latSize = (topLat - bottomLat) / 2))
+}
+
+
+#' @description It divides the given rectangle in squares of a certain area.
+#' @param latT top latitude of the rectangle
+#' @param latB bottom latitude of the rectangle
+#' @param lonL left longitude of the rectangle
+#' @param lonR right longitude of the rectangle
+#' @return data.frame(latT, latB, lonL, lonR, smaller) each row is a square
+#' @note it goes top-left to bottom-right
+#' @note some squares can be rectangles that fill the region
+#' @note it uses findSquare() to obtain the area approximation
+#' @note the smaller boolean of the data.frame() specifies if the square is a
+#' limiting one, and hence it is smaller than a square kilometer
+divideInSquares <- function(latT, latB, lonL, lonR, area) {
+  currLat <- latT
+  currLon <- lonL
+  
+  # Grid lines
+  lonLines <- c()
+  latLines <- c()
+  
+  areaSquare <- findSquare(topLat = latT, area = area)
+  
+  # Get the latitude lines of the grid
+  while (currLat > latB) {
+    latLines <- c(latLines, currLat)
+    currLat <- currLat - areaSquare$latSize
+  }
+  latLines <- c(latLines, latB)
+  
+  # Get the longitude lines of the grid
+  while (currLon < lonR) {
+    lonLines <- c(lonLines, currLon)
+    currLon <- currLon + areaSquare$lonSize
+  }
+  lonLines <- c(lonLines, lonR)
+  
+  lonsL <- c()
+  lonsR <- c()
+  latsT <- c()
+  latsB <- c()
+  smaller <- c()
+  for (ln in 1:(length(lonLines)-1)) {
+    for (lt in 1:(length(latLines) - 1)) {
+      lonsL <- c(lonsL, lonLines[ln])
+      lonsR <- c(lonsR, lonLines[ln + 1])
+      
+      latsT <- c(latsT, latLines[lt])
+      latsB <- c(latsB, latLines[lt + 1])
+      
+      if (lt == length(latLines) - 1 | ln == length(lonLines) - 1) {
+        smaller <- c(smaller, TRUE)
+      } else {
+        smaller <- c(smaller, FALSE)
+      }
+    }
+  }
+  
+  return(data.frame(latT = latsT, latB = latsB,
+                    lonL = lonsL, lonR = lonsR, smaller = smaller))
+}

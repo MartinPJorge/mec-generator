@@ -11,6 +11,80 @@
                 "zoom": 13,
                 "mapType": "toner-lite"
             },
+            "skycrapers": [
+                {
+                    "name": "torre-espacio",
+                    "floors": 56,
+                    "lat": 40.4790706,
+                    "lon": -3.6865707
+                },
+                {
+                    "name": "torre-cepsa",
+                    "floors": 49,
+                    "lat": 40.475865, 
+                    "lon": -3.687971
+                },
+                {
+                    "name": "torre-pwc",
+                    "floors": 52,
+                    "lat": 40.4767085,
+                    "lon": -3.6901067
+                },
+                {
+                    "name": "torre-picasso",
+                    "floors": 43,
+                    "lat": 40.450278,
+                    "lon": -3.6946887
+                },
+                {
+                    "name": "torre-europa",
+                    "floors": 32,
+                    "lat": 40.451667,
+                    "lon": -3.6938557
+                },
+                {
+                    "name": "torre-madrid",
+                    "floors": 37,
+                    "lat": 40.4243122,
+                    "lon": -3.714564
+                },
+                {
+                    "name": "castellana-81",
+                    "floors": 28,
+                    "lat": 40.447778,
+                    "lon": -3.6941327
+                },
+                {
+                    "name": "torres-de-colon",
+                    "floors": 23,
+                    "lat": 40.4257545,
+                    "lon": -3.6910087
+                },
+                {
+                    "name": "torre-titania",
+                    "floors": 23,
+                    "lat": 40.4468,
+                    "lon": -3.6966887
+                },
+                {
+                    "name": "torre-mahou",
+                    "floors": 29,
+                    "lat": 40.4485029,
+                    "lon": -3.6963289
+                },
+                {
+                    "name": "puerta-de-europa-torre-2",
+                    "floors": 26,
+                    "lat": 40.4667028,
+                    "lon": -3.6908376
+                },
+                {
+                    "name": "puerta-de-europa-torre-1",
+                    "floors": 26,
+                    "lat": 40.466882,
+                    "lon": -3.6920817
+                }
+            ],
             "populations": [
                 {
                     "id": "Centro",
