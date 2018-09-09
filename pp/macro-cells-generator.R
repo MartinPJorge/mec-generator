@@ -11,32 +11,26 @@ library(metR)
 
 REGIONS <- "../data/regions.json"
 REGION_NAME <- "Madrid-center"
+SQUARE_FACTORS <- "../data/people/Madrid-center/people-lambda"
+MACRO_CELLS_CSV <- "../data/antennas/Madrid-center/macro-cells.csv"
 PEOPLE_MAT <- "../data/people/Madrid-center/people-lambda"
 PEOPLE_LONS <- "../data/people/Madrid-center/people-longitudes"
 PEOPLE_LATS <- "../data/people/Madrid-center/people-latitudes"
-OUT_SQUARE_FACTORS <- NULL
 CLI <- FALSE # flag to tell if file is executed from CLI
-
-# How big are the cells where we now how many AAUs are
-# according to Luca Cominardi, we have 12 AAUs per square kilometer
-SQUARE_SIDE <- 1 # expresed in kilometers
-SQUARE_AAUs <- 12
-REPULSION <- 1 / (2*ceil(sqrt(SQUARE_AAUs))) # expressed in kilometers
-
 
 # Parse arguments if existing to change default global variables
 args <- commandArgs(trailingOnly=TRUE)
 if(length(args) > 0)
   if(length(args) != 5) {
     stop(paste("Arguments to receive are: ",
-      "peopleMat longitudeSamp latitudeSamp AAUs outSquareFactors"))
+      "peopleMat longitudeSamp latitudeSamp squareFactors macroCellsCSV"))
   } else {
     CLI <- TRUE
     PEOPLE_MAT <- args[1]
     PEOPLE_LONS <- args[2]
     PEOPLE_LATS <- args[3]
-    SQUARE_AAUs <- as.numeric(args[4])
-    OUT_SQUARE_FACTORS <- args[5]
+    SQUARE_FACTORS <- args[4]
+    MACRO_CELLS_CSV <- args[5]
   }
 
 
@@ -50,123 +44,59 @@ lonL <- min(lonAxis)
 lonR <- max(lonAxis)
 
 # Generate the interpolation function
+print("Generating the people intensity function as input matrix interpolation")
 peopleIntpF <- genInterpInt(popMat, lonAxis, latAxis)
 
 
-# Divide regions in areas of ~ 1km x 1km
-regionSquares1 <- divideInSquares(latT = latT, latB = latB,
-                                  lonL = lonL, lonR = lonR,
-                                  area = SQUARE_SIDE * SQUARE_SIDE)
-
-# Get the mapI MatternII average number of points at each square
-avgPoints <- c()
-for (sq in 1:nrow(regionSquares1)) {
-  square <- regionSquares1[sq,]
-  avgSq <- matternIImapIintMapprox3(lonL = square$lonL, lonR = square$lonR,
-                                    latB = square$latB, latT = square$latT,
-                                    r = REPULSION * 1000,
-                                    intensityF = peopleIntpF)
-  avgPoints <- c(avgPoints, avgSq)
-}
-regionSquares1 <- data.frame(lonL = regionSquares1$lonL,
-                             lonR = regionSquares1$lonR,
-                             latB = regionSquares1$latB,
-                             latT = regionSquares1$latT,
-                             smaller = regionSquares1$smaller,
-                             avgAAUs = avgPoints)
+squareFactors <- read.csv(file = SQUARE_FACTORS)
 
 
-# FInd the factor to multiply intensity function at each square
-baseSideSquares <- ceil(sqrt(SQUARE_AAUs))
-sideSquares <- seq(from = baseSideSquares, to = baseSideSquares + 5, by = 1)
-intFactors <- c(SQUARE_AAUs, SQUARE_AAUs * 2, SQUARE_AAUs * 4, SQUARE_AAUs * 8)
-squareFactors <- c()
-squareSideSqs <- c()
-squareAvgs <- c()
-
-for (row in 1:nrow(regionSquares1)) {
-  print("Square")
-  print(row)
-  currAvg <- Inf
-  currFactor <- Inf
-  currSquares <- Inf
-  square <- regionSquares1[row,]
-  win <- owin(xrange = c(square$lonL, square$lonR),
-              yrange = c(square$latB, square$latT))
+# Iterate through each square and generate the antennas
+macroLons <- c()
+macroLats <- c()
+lonLs <- c()
+lonRs <- c()
+latBs <- c()
+latTs <- c()
+squareNos <- c()
+for (row in 1:nrow(squareFactors)) {
+  square <- squareFactors[row,]
   
+  cat(sprintf("Generating macro cells for square %d\n", row))
+  cat(sprintf("  lonL=%f lonR=%f latB=%f latT=%f\n", square$lonL, square$lonR,
+          square$latB, square$latT))
   
-  # Leave the smaller squares without calculation
-  if (square$smaller) {
-    squareFactors <- c(squareFactors, Inf)
-    squareSideSqs <- c(squareSideSqs, Inf)
-    squareAvgs <- c(squareAvgs, Inf)
-  } else {
-    # Find best setup for the square to have avg number of points greater than
-    # SQUARE_AAUs
-    for (squares in baseSideSquares) {
-      repulsion <- 1 / (2*squares) # expressed in kilometers
-      print("  #suqres")
-      print(squares)
-      
-      for (factor_ in intFactors) {
-        print("  factor")
-        print(factor_)
-        lambdaSq <- function(lon, lat) {
-          return(factor_ / square$avgAAUs * peopleIntpF(lon, lat))
-        }
-        
-        ps <- c()
-        for (i in 1:40) {
-          points_ <- jorgeMaternIImapI(lambda = lambdaSq, win = win,
-                                       r = repulsion * 1000)
-          ps <- c(ps, points_$n)
-        }
-        avgPs <- mean(ps)
-        
-        # Found avg > SQUARE_AAUs
-        if(avgPs > SQUARE_AAUs & avgPs < currAvg) {
-          currAvg <- avgPs
-          currFactor <- factor_
-          currSquares <- squares
-        }
-      }
-    }
-    
-    # Append the best obtained values
-    squareFactors <- c(squareFactors, currFactor)
-    squareSideSqs <- c(squareSideSqs, currSquares)
-    squareAvgs <- c(squareAvgs, currAvg)
-    print("found average")
-    print(currAvg)
+  squareWin <- owin(xrange = c(square$lonL, square$lonR),
+                    yrange = c(square$latB, square$latT))
+  squareRepulsion <- 1 / (2 * square$sideSquares)
+  
+  lambdaSq <- function(lon, lat) {
+    return(square$factor / square$avgAAUs * peopleIntpF(lon, lat))
   }
+  
+  # Generate the macro-cell antennas
+  squareMacroCells <- jorgeMaternIImapI(lambda = lambdaSq, win = squareWin,
+                                    r = squareRepulsion * 1000)
+  
+  cat(sprintf("  %d macro-cells generated\n", squareMacroCells$n))
+  
+  # Append the antennas and square information
+  macroLons <- c(macroLons, squareMacroCells$x)
+  macroLats <- c(macroLats, squareMacroCells$y)
+  lonLs <- c(lonLs, rep(square$lonL, squareMacroCells$n))
+  lonRs <- c(lonRs, rep(square$lonR, squareMacroCells$n))
+  latBs <- c(latBs, rep(square$latB, squareMacroCells$n))
+  latTs <- c(latTs, rep(square$latT, squareMacroCells$n))
+  squareNos <- c(squareNos, rep(row, squareMacroCells$n))
 }
 
 
-# Substitute the smaller squares parameters by the obtained in the previous
-# non-smaller
-lastCorrectIdx <- 1
-for (i in 1:length(squareAvgs)) {
-  if (squareAvgs[i] == Inf) {
-    squareFactors[i] <- squareFactors[lastCorrectIdx]
-    squareSideSqs[i] <- squareSideSqs[lastCorrectIdx]
-  } else {
-    lastCorrectIdx <- i
-  }
-}
-
-regionSquares1 <- data.frame(lonL = regionSquares1$lonL,
-                             lonR = regionSquares1$lonR,
-                             latB = regionSquares1$latB,
-                             latT = regionSquares1$latT,
-                             smaller = regionSquares1$smaller,
-                             avgAAUs = regionSquares1$avgAAUs,
-                             factor = squareFactors,
-                             sideSquares = squareSideSqs,
-                             avgAAUs = squareAvgs)
-
-if (CLI) {
-  write.csv(regionSquares1, file = OUT_SQUARE_FACTORS)
-}
+# Store the generated antennas
+write.csv(data.frame(lon = macroLons, lat = macroLats, squareLonL = lonLs,
+                     squareLonR = lonRs, squareLatB = latBs, squareLatT = latTs,
+                     squareNum = squareNos,
+                     radio = rep("macro-cell", length(lonRs))),
+          file = MACRO_CELLS_CSV)
 
 
 ## # TEST FOR A CERTAIN SQUARE

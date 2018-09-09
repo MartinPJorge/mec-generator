@@ -14,4 +14,14 @@ Below it is shown a table summarizing the scripts' usage:
 along-rural-road.R | It generates a CSV with antennas along the A3 rural area road. The CSV with the rural area antennas must be generated. | `along-rural-road.R path/to/out.csv`
 madrid-center-femto-cells.R | It generates a CSV with the femto-cells to be located in the Madrid skycraperswith the already existing LTE cells of operator net=7 | `las-femtooo.csv path/to/antennas-and-femto.csv`
 gen-people-lambda.R | It generates the people intensity function and store it as a matrix and two vectors that are the latitude and longitude samples. | `gen-people-lambda.R regionId longitudeSample latitudeSample matrixOUT lonsOUT latsOUT`
+macro-cells-factors.R | Taking as input the people intensity matrix (and the corresponding longitude and latitude axis), it determines the parameters needed to obtain on average a certain amount of AAUs per km^2. See [macro-cells-factors note](#macro-cells-factors-generation) for output details. | `macro-cells-factors.R peopleMatrix longitudeSamp latitudeSamp squareFactors macroCellsCSV`
+macro-cells-generator.R | It generates a CSV file with macro-cell antennas locations based in the associated factors per each km^2. It is based on the people intensity matrix and the factors obtained with `macro-cells-factors.R` to obtain the desired average AAUs with repulsion. | `macro-cells-generator.R peopleMat longitudeSamp latitudeSamp squareFactors macroCellsCSV`
+
+
+## Script notes
+### Macro-cells factors generation
+* `factor / avgAAUs`: if people intensity function is multiplied by this at each km^2 square of the region, we get on average the AAUs passed by argument
+* `sideSquares^2`: the amount of cells in which the km^2 is divided. The repulsion radius of generated macro-cells will be `1 / (2*sideSquares)`
+* `smaller`: determines if the square area is 1km^2 or less. If set to TRUE, then it is a limiting rectangle of the region
+
 
