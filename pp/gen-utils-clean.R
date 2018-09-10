@@ -1486,3 +1486,144 @@ divideInSquares <- function(latT, latB, lonL, lonR, area) {
   return(data.frame(latT = latsT, latB = latsB,
                     lonL = lonsL, lonR = lonsR, smaller = smaller))
 }
+
+
+
+#' @description It generates the intensity function for the location of MEC
+#' servers based on antennas locations and radio technologies.
+#' @param lons array with the longitude of each antenna
+#' @param lats array with the latitude of each antenna
+#' @param radios array with the radio technology of each antenna
+#' @param maxDiss list with the maximum distance in meters to which a MEC server
+#' can be from an antenna: list(LTE = 2000, femtoCell = 300, macroCell = 1000)
+#' @return a function(lon, lat) to get the intensity with which the MEC can be
+#' located at coordinated (lon, lat)
+#' @note the intensity is the sumation of all the radial function centered at
+#' each antenna
+mecGenInt <- function(lons, lats, radios, maxDiss) {
+  
+  # Defines the intensity functions for each center
+  center_ints <- list()
+  for (i in 1:length(lons)) {
+    center_ints[[i]] <- local({
+      mDis <- NULL
+      if (radios[i] == "LTE") {
+        mDis <- maxDiss$LTE
+      } else if(radios[i] == "femto-cell") {
+        mDis <- maxDiss$femtoCell
+      } else if(radios[i] == "macro-cell") {
+        mDis <- maxDiss$smallCell
+      }
+      origin <- list(lon = lons[i], lat = lats[i], maxDis = mDis)
+      
+      function(longi, lati) {
+        # Vicenty's distance
+        r <- distanceMulti(lat1=lati, lon1=longi,
+                 lat2=origin$lat, lon2=origin$lon)
+        
+        if (r < origin$maxDis) {
+          return(1)
+        }
+        return(0)
+      }
+      
+    })
+  }
+  
+  # Creates the function that is sum of intensities
+  sum_int <- function(longi, lati) {
+    sum_prob <- 0
+    i <- 0
+    for (center_int in center_ints) {
+      sum_prob <- sum_prob + center_int(longi, lati)
+      i <- i + 1
+    }
+    return(sum_prob)
+  }
+  
+  return(sum_int)
+}
+
+
+#' @description Given some antennas' location, it obtains the intensity function
+#' of where MEC PoPs can be located using Manhattan distance.
+#' @param lonL left longitude of the region
+#' @param lonR right longitude of the region
+#' @param latB bottom latitude of the region
+#' @param latT top latitude of the region
+#' @param lonSamples number of samples for the longitude axis in the matrix
+#' @param latSamples number of samples for the latitude axis in the matrix
+#' @param antLons longitudes of the antennas
+#' @param antLats latitudes of the antennas
+#' @param antRadios radio technology of each antenna (LTE, macro-cell, or
+#' femto-cell)
+#' @param maxDiss maximum distance where a MEC server can be away from each
+#' antenna depending on its technology: list(LTE=10, macroCell=10, femtoCell=1)
+#' @return list(matrix, latAxis, lonAxis)
+#' @note the function estimates on the top left of the region how many latitude
+#' and coordinate units are needed for a meter. This estimation is used all over
+#' the map. The reasoning is to boost up performace avoiding Vicenty's distance.
+#' Hence this function does not generate an exact intensity matrix
+mecIntManhattan <- function(lonL, lonR, latB, latT, lonSamples, latSamples,
+                            antLons, antLats, antRadios, maxDiss) {
+  # Estimation of longitude and latitude distance of one meter
+  lonD <- destination(lat = latT, lon = lonL, distance = 1, bearing = 90)
+  lonMeter <- abs(lonD$lon2 - lonD$lon1)
+  latD <- destination(lat = latT, lon = lonL, distance = 1, bearing = 180)
+  latMeter <- abs(latD$lat2 - latD$lat1)
+  
+  # Create the intensity 
+  lonAxis <- seq(from = lonL, to = lonR, length.out = lonSamples)
+  latAxis <- seq(from = latB, to = latT, length.out = latSamples)
+  mecMatrix <- matrix(data = 0, nrow = lonSamples, ncol = latSamples)
+  
+  for (i in 1:length(antLons)) {
+    print(i)
+    # Select antenna's maximum distance
+    mDis <- NULL
+    if (antRadios[i] == "LTE") {
+      mDis <- maxDiss$LTE
+    } else if(antRadios[i] == "femto-cell") {
+      mDis <- maxDiss$femtoCell
+    } else if(antRadios[i] == "macro-cell") {
+      mDis <- maxDiss$macroCell
+    }
+    
+    # Get the sides' limits
+    leftLim <- destination(lat = antLats[i], lon = antLons[i], distance = mDis,
+                           bearing = 270)$lon2
+    rightLim <- destination(lat = antLats[i], lon = antLons[i], distance = mDis,
+                           bearing = 90)$lon2
+    topLim <- destination(lat = antLats[i], lon = antLons[i], distance = mDis,
+                           bearing = 0)$lat2
+    bottomLim <- destination(lat = antLats[i], lon = antLons[i],
+                             distance = mDis, bearing = 180)$lat2
+    
+    # Check the limits are inside the region
+    leftLim <- min(leftLim, lonL)
+    rightLim <- min(rightLim, lonR)
+    bottomLim <- min(bottomLim, latB)
+    topLim <- min(topLim, latT)
+    
+    # Get the limiting square indexes inside the matrix
+    lonInds <- which(lonAxis > leftLim & lonAxis < rightLim)
+    latInds <- which(latAxis > bottomLim & latAxis < topLim)
+    
+    # Iterate through coords inside limiting square to get the ones inside
+    # antenna's region
+    for (lonInd in lonInds) {
+      for (latInd in latInds) {
+        manhattanDis <- abs(antLons[i] - lonAxis[lonInd]) / lonMeter +
+          abs(antLats[i] - latAxis[latInd]) / latMeter
+        
+        # Add a unit to the coordinate
+        if (manhattanDis <= mDis) {
+          mecMatrix[lonInd, latInd] <- mecMatrix[lonInd, latInd] + 1
+        }
+      }
+    }
+  }
+  
+  return(list(matrix = mecMatrix, latAxis = latAxis, lonAxis = lonAxis))
+}
+
