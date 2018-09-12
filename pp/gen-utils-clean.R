@@ -1544,6 +1544,69 @@ mecGenInt <- function(lons, lats, radios, maxDiss) {
   return(sum_int)
 }
 
+#' @description Obtains the square centered at (lon, lat) inside a region.
+#' @param lon longitude coordinate
+#' @param lat latitude coordinate
+#' @param lonL left longitude of the region
+#' @param lonR right longitude of the region
+#' @param latB bottom latitude of the region
+#' @param latT top latitude of the region
+#' @param halfSide how long is in meters half the side of the square
+#' @return list(left, right, bottom, up) with the limiting coordinates
+#' @note it uses Vicenty's distance
+aroundSquare <- function(lon, lat, lonL, lonR, latB, latT, halfSide) {
+  # Get the sides' limits arround the MEC location (maxInt)
+  leftLim <- destination(lat = lat, lon = lon,
+                         distance = halfSide, bearing = 270)$lon2
+  rightLim <- destination(lat = lat, lon = lon,
+                          distance = halfSide, bearing = 90)$lon2
+  topLim <- destination(lat = lat, lon = lon,
+                        distance = halfSide, bearing = 0)$lat2
+  bottomLim <- destination(lat = lat, lon = lon,
+                           distance = halfSide, bearing = 180)$lat2
+  
+  # Check the limits are inside the region
+  leftLim <- max(leftLim, lonL)
+  rightLim <- min(rightLim, lonR)
+  bottomLim <- max(bottomLim, latB)
+  topLim <- min(topLim, latT)
+
+  return(list(left = leftLim, right = rightLim,
+              bottom = bottomLim, top = topLim))
+}
+
+
+#' @description Obtains the square centered at (lon, lat) inside a region. It
+#' uses an estimation of the ammount of latitude and longitude degrees to
+#' achieve a meter.
+#' @param lon longitude coordinate
+#' @param lat latitude coordinate
+#' @param lonL left longitude of the region
+#' @param lonR right longitude of the region
+#' @param latB bottom latitude of the region
+#' @param latT top latitude of the region
+#' @param halfSide how long is in meters half the side of the square
+#' @param lonMet longitude degrees per meter (deg/meter)
+#' @param latMet latitude degrees per meter (deg/meter)
+#' @return list(left, right, bottom, up) with the limiting coordinates
+aroundSquareEstim <- function(lon, lat, lonL, lonR, latB, latT, halfSide,
+                              lonMet, latMet) {
+  
+  # Square limits
+  leftLim <- lon - abs(halfSide * lonMet)
+  rightLim <- lon + abs(halfSide * lonMet)
+  bottomLim <- lat - abs(halfSide * latMet)
+  topLim <- lat + abs(halfSide * latMet)
+  
+  # Check the limits are inside the region
+  leftLim <- max(leftLim, lonL)
+  rightLim <- min(rightLim, lonR)
+  bottomLim <- max(bottomLim, latB)
+  topLim <- min(topLim, latT)
+
+  return(list(left = leftLim, right = rightLim,
+              bottom = bottomLim, top = topLim))
+}
 
 #' @description Given some antennas' location, it obtains the intensity function
 #' of where MEC PoPs can be located using Manhattan distance.
@@ -1589,21 +1652,14 @@ mecIntManhattan <- function(lonL, lonR, latB, latT, lonSamples, latSamples,
       mDis <- maxDiss$macroCell
     }
     
-    # Get the sides' limits
-    leftLim <- destination(lat = antLats[i], lon = antLons[i], distance = mDis,
-                           bearing = 270)$lon2
-    rightLim <- destination(lat = antLats[i], lon = antLons[i], distance = mDis,
-                           bearing = 90)$lon2
-    topLim <- destination(lat = antLats[i], lon = antLons[i], distance = mDis,
-                           bearing = 0)$lat2
-    bottomLim <- destination(lat = antLats[i], lon = antLons[i],
-                             distance = mDis, bearing = 180)$lat2
-    
-    # Check the limits are inside the region
-    leftLim <- min(leftLim, lonL)
-    rightLim <- min(rightLim, lonR)
-    bottomLim <- min(bottomLim, latB)
-    topLim <- min(topLim, latT)
+    # Get the square surounding the antenna
+    arqSq <- aroundSquare(lon = antLons[i], lat = antLats[i],
+                         lonL = lonL, lonR = lonR, latB = latB, latT = latT,
+                         halfSide = mDis)
+    leftLim <- arqSq$left
+    rightLim <- arqSq$right
+    bottomLim <- arqSq$bottom
+    topLim <- arqSq$top
     
     # Get the limiting square indexes inside the matrix
     lonInds <- which(lonAxis > leftLim & lonAxis < rightLim)
@@ -1611,6 +1667,7 @@ mecIntManhattan <- function(lonL, lonR, latB, latT, lonSamples, latSamples,
     
     # Iterate through coords inside limiting square to get the ones inside
     # antenna's region
+    increased <- 0
     for (lonInd in lonInds) {
       for (latInd in latInds) {
         manhattanDis <- abs(antLons[i] - lonAxis[lonInd]) / lonMeter +
@@ -1619,11 +1676,229 @@ mecIntManhattan <- function(lonL, lonR, latB, latT, lonSamples, latSamples,
         # Add a unit to the coordinate
         if (manhattanDis <= mDis) {
           mecMatrix[lonInd, latInd] <- mecMatrix[lonInd, latInd] + 1
+          increased <- increased + 1
         }
       }
     }
+    cat(sprintf("  increased %d coordinates\n", increased))
   }
   
   return(list(matrix = mecMatrix, latAxis = latAxis, lonAxis = lonAxis))
 }
+
+
+mecLocationDig <- function(mecIntMatrix, lonAxis, latAxis, maxDis,
+                           numLocations) {
+}
+
+
+#' @description It determines the location of MEC PoPs based on the intensity
+#' matrix decrease arround covered antennas.
+#' @param mecIntMatrix intensity matrix [lon, lat] to generate the MEC PoP at a
+#' certain coordinate
+#' @param lonAxis vector with the longitude coordinates of the matrix
+#' @param latAxis vector with the latitude coordinates of the matrix
+#' @param maxDiss maximum distance where a MEC server can be away from each
+#' antenna depending on its technology: list(LTE=10, macroCell=10, femtoCell=1)
+#' @param numMECs number of MEC PoPs to generate
+#' @param antLons longitudes of the antennas
+#' @param antLats latitudes of the antennas
+#' @param antRadios radio technology of each antenna (LTE, macro-cell, or
+#' @param lonL left longitude of the region
+#' @param lonR right longitude of the region
+#' @param latB bottom latitude of the region
+#' @param latT top latitude of the region
+#' femto-cell)
+#' @return list(pos=data.frame(lon, lat, intensityMeas),
+#' antennas=data.frame(lon, lat, MEC)
+#' @note ret$pos$intMeas is the integral arround the MEC location
+#'       ret$antennas$MEC references the MEC's row in ret$pos
+#' @note Algorithm overview:
+#' 1. while mecPoPs < numMECs:
+#' 2.   nextMEC <- max_(x,y) mecIntMatix(x,y)
+#' 3.   for antenna in Ball(nextMEC, max(maxDiss)):
+#' 4.     mecIntMatrix[Ball(antenna,maxDiss(antenna))] -= 1
+mecLocationAntenna <- function(mecIntMatrix, lonAxis, latAxis, maxDiss,
+                               numMECs, antLons, antLats, antRadios,
+                               lonL, lonR, latB, latT) {
+  # Estimation of longitude and latitude distance of one meter
+  lonD <- destination(lat = latT, lon = lonL, distance = 1, bearing = 90)
+  lonMeter <- abs(lonD$lon2 - lonD$lon1)
+  latD <- destination(lat = latT, lon = lonL, distance = 1, bearing = 180)
+  latMeter <- abs(latD$lat2 - latD$lat1)
+  
+  mecLons <- c()
+  mecLats <- c()
+  mecInts <- c()
+  antMecAsoc <- rep(x = -1, length(antLons))
+  antCovered <- rep(x = FALSE, length(antLons))
+  maxAntRad <- max(unlist(maxDiss))
+  
+  #DEBUG VARS
+  D_MUL_DOWNS <- 0
+  
+  while (length(mecLons) < numMECs) {
+    maxMecInts <- max(mecIntMatrix)
+    mecCoord <- which(maxMecInts == mecIntMatrix, arr.ind = TRUE)
+    mecCoord <- c(lonAxis[mecCoord[1]], latAxis[mecCoord[2]])
+    mecLons <- c(mecLons, mecCoord[1])
+    mecLats <- c(mecLats, mecCoord[2])
+    mecInts <- c(mecInts, maxMecInts)
+    cat(sprintf("MEC number: %d\n", length(mecLons)))
+    cat(sprintf("  uncovered antennas: %d\n", sum(!antCovered)))
+    cat(sprintf("  location: (%f,%f)\n", mecCoord[1], mecCoord[2]))
+    
+    # Get the square surounding the MEC
+    arqSq <- aroundSquare(lon = mecCoord[1], lat = mecCoord[2],
+                         lonL = lonL, lonR = lonR, latB = latB, latT = latT,
+                         halfSide = maxAntRad)
+    leftLim <- arqSq$left
+    rightLim <- arqSq$right
+    bottomLim <- arqSq$bottom
+    topLim <- arqSq$top
+    cat(sprintf("  left: %f, right: %f, top: %f, down: %f\n", leftLim, rightLim,
+                topLim, bottomLim))
+    
+    
+    # Get the indexes of antennas inside the MEC square which are not covered
+    # yet
+    antInd <- (antLons > leftLim & antLons < rightLim) &
+      (antLats > bottomLim & antLats < topLim) &
+      !antCovered
+    cat(sprintf("  num inside antennas: %d\n", sum(antInd)))
+    #cat(sprintf("  inside antennas ind bool: %d\n", antInd))
+    antInd <- which(TRUE == antInd)
+    #cat(sprintf("  inside antennas index: %d\n", antInd))
+    
+    # Iterate through the antennas covered by the MEC
+    for (ai in antInd) {
+      #cat(sprintf("    at antenna index: %d\n", ai))
+      if (antCovered) {
+        D_MUL_DOWNS <- D_MUL_DOWNS + 1
+      }
+      ant2MecDis <- abs(antLons[ai] - mecCoord[1]) / lonMeter +
+        abs(antLats[ai] - mecCoord[2]) / latMeter # Manhattan distance
+      
+      # Select antenna's maximum distance
+      mDis <- NULL
+      if (antRadios[ai] == "LTE") {
+        mDis <- maxDiss$LTE
+      } else if(antRadios[ai] == "femto-cell") {
+        mDis <- maxDiss$femtoCell
+      } else if(antRadios[ai] == "macro-cell") {
+        mDis <- maxDiss$macroCell
+      }
+      
+      # If the antenna can access the MEC, associate and decrease its
+      # suroundings
+      #cat(sprintf("  distance: %f\n", ant2MecDis))
+      if (ant2MecDis <= mDis) {
+        # cat(sprintf("  decreasing around %s at (%f,%f)\n", antRadios[ai],
+        #             antLons[ai], antLats[ai]))
+        antCovered[ai] <- TRUE
+        antMecAsoc[ai] <- length(mecLons)
+        
+        # antSqLims <- aroundSquareEstim(lon = antLons[ai], lat = antLats[ai],
+        #                   lonL = lonL, lonR = lonR, latB = latB, latT = latT,
+        #                   halfSide = mDis, lonMet = lonMeter,
+        #                   latMet = latMeter)
+        antSqLims <- aroundSquare(lon = antLons[ai], lat = antLats[ai],
+                     lonL = lonL, lonR = lonR, latB = latB, latT = latT,
+                     halfSide = mDis)
+        
+        # Coordinates falling inside the antenna square
+        antLonInds <- which(lonAxis > antSqLims$left &
+                              lonAxis < antSqLims$right)
+        antLatInds <- which(latAxis > antSqLims$bottom &
+                              latAxis < antSqLims$top)
+        
+        # Reduce the mec intensity matrix around the given antenna
+        for (intLon in antLonInds) {
+          for (intLat in antLatInds) {
+            ant2CoorD <- abs(antLons[ai] - lonAxis[intLon]) / lonMeter +
+              abs(antLats[ai] - latAxis[intLat]) / latMeter # Manhattan distance
+            
+            if (ant2CoorD <- mDis) {
+              mecIntMatrix[intLon, intLat] <- mecIntMatrix[intLon, intLat] - 1
+            }
+          }
+        }
+      }
+      
+    }
+  }
+  
+  cat(sprintf("antennas selected more than once: %d\n", D_MUL_DOWNS))
+  
+  # Pack the MEC locations and antenna associations
+  mecs <- data.frame(lon = mecLons, lat = mecLats, intensityMeas = mecInts)
+  antennasAssoc <- data.frame(lon = antLons, lat = antLats, MEC = antMecAsoc)
+  
+  return(list(pos = mecs, antennas = antennasAssoc, modMat = mecIntMatrix))
+}
+
+
+downAntInt <- function(intMat, lonAxis, latAxis, antLons, antLats, antRadios,
+                       maxDiss, lonL, lonR, latB, latT) {
+  intMatD <- intMat
+  
+  # Estimation of longitude and latitude distance of one meter
+  lonD <- destination(lat = latT, lon = lonL, distance = 1, bearing = 90)
+  lonMeter <- abs(lonD$lon2 - lonD$lon1)
+  latD <- destination(lat = latT, lon = lonL, distance = 1, bearing = 180)
+  latMeter <- abs(latD$lat2 - latD$lat1)
+  
+  for (ai in 1:length(antLons)) {
+    print(ai)
+    # Select antenna's maximum distance
+    mDis <- NULL
+    if (antRadios[ai] == "LTE") {
+      mDis <- maxDiss$LTE
+    } else if(antRadios[ai] == "femto-cell") {
+      mDis <- maxDiss$femtoCell
+    } else if(antRadios[ai] == "macro-cell") {
+      mDis <- maxDiss$macroCell
+    }
+    cat(sprintf("  %s max distance: %d\n", antRadios[ai], mDis))
+    
+    # Get the square surounding the antenna
+    arqSq <- aroundSquare(lon = antLons[ai], lat = antLats[ai],
+                         lonL = lonL, lonR = lonR, latB = latB, latT = latT,
+                         halfSide = mDis)
+    leftLim <- arqSq$left
+    rightLim <- arqSq$right
+    bottomLim <- arqSq$bottom
+    topLim <- arqSq$top
+    
+    cat(sprintf("  left=%f, right=%f, top=%f, bottom=%f\n",
+                leftLim, rightLim, topLim, bottomLim))
+    
+    
+    # Get the limiting square indexes inside the matrix
+    lonInds <- which(lonAxis > leftLim & lonAxis < rightLim)
+    latInds <- which(latAxis > bottomLim & latAxis < topLim)
+    cat(sprintf("  there are %d lonInd, %d latInd\n", length(lonInds),
+                length(latInds)))
+    
+    # Iterate through coords inside limiting square to get the ones inside
+    # antenna's region
+    decreased <- 0
+    for (lonInd in lonInds) {
+      for (latInd in latInds) {
+        manhattanDis <- abs(antLons[ai] - lonAxis[lonInd]) / lonMeter +
+          abs(antLats[ai] - latAxis[latInd]) / latMeter
+        
+        # Add a unit to the coordinate
+        if (manhattanDis <= mDis) {
+          intMatD[lonInd, latInd] <- intMatD[lonInd, latInd] - 1
+          decreased <- decreased + 1
+        }
+      }
+    }
+    cat(sprintf("  decreased %d coordinates\n", decreased))
+  }
+  
+  return(intMatD)
+}
+
 
