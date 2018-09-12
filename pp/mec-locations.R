@@ -95,29 +95,23 @@ maxDiss <- list(LTE = mecParams$LTE$maxDistance,
                 macroCell = mecParams$smallCell$maxDistance,
                 femtoCell = mecParams$femtoCell$maxDistance)
 
-# DEBUG COMMENT
-# mecIntMat <- mecIntManhattan(lonL = region$bl$lon, lonR = region$tr$lon,
-#                 latB = region$bl$lat, latT = region$tr$lat,
-#                 lonSamples = LON_SAMPLES, latSamples = LAT_SAMPLES,
-#                 antLons = allAntennas$lon, antLats = allAntennas$lat,
-#                 antRadios = as.character(allAntennas$radio), maxDiss = maxDiss)
-# 
-# mecFrame <- intMat2Frame(intMat = mecIntMat$matrix,
-#                          latAxis = mecIntMat$latAxis,
-#                          lonAxis = mecIntMat$lonAxis)
-# 
-# # try reduction -> all must be zero
-# downMat <- downAntInt(intMat = mecIntMat$matrix, lonAxis = mecIntMat$lonAxis,
-#            latAxis = mecIntMat$latAxis, antLons = allAntennas$lon,
-#            antLats = allAntennas$lat,
-#            antRadios = as.character(allAntennas$radio), maxDiss = maxDiss,
-#            lonL = region$bl$lon, lonR = region$tr$lon,
-#            latB = region$bl$lat, latT = region$tr$lat)
-
+mecIntMat <- mecIntManhattan(lonL = region$bl$lon, lonR = region$tr$lon,
+                latB = region$bl$lat, latT = region$tr$lat,
+                lonSamples = LON_SAMPLES, latSamples = LAT_SAMPLES,
+                antLons = allAntennas$lon, antLats = allAntennas$lat,
+                antRadios = as.character(allAntennas$radio), maxDiss = maxDiss)
+loggedMecInt <- intMat2Frame(intMat = mecIntMat$matrix,
+                         latAxis = mecIntMat$latAxis,
+                         lonAxis = mecIntMat$lonAxis)
+ggmap(map) + 
+  ggplot2::stat_contour(data = loggedMecInt, aes(z=intensity, fill=..level..),
+               geom = "polygon", alpha=0.3) +
+  scale_fill_gradient(low = "gray", high = "black") +
+  scale_colour_gradient(low = "gray", high = "black") +
+  labs(fill = TeX("$log(1 + \\lambda (lon, lat))$")) 
 
 
 # Obtain the MEC server locations
-#source("gen-utils-clean.R")
 numMECs <- 30
 mecLocs <- mecLocationAntenna(mecIntMatrix = mecIntMat$matrix,
                               lonAxis = mecIntMat$lonAxis,
@@ -127,17 +121,19 @@ mecLocs <- mecLocationAntenna(mecIntMatrix = mecIntMat$matrix,
                               antRadios = as.character(allAntennas$radio),
                               lonL = region$bl$lon, lonR = region$tr$lon,
                               latB = region$bl$lat, latT = region$tr$lat) 
-
+loggedMecLocsMat <- intMat2Frame(intMat = log(1 + mecLocs$modMat),
+                         latAxis = mecIntMat$latAxis,
+                         lonAxis = mecIntMat$lonAxis)
 cat(sprintf("uncovered antennas: %d", sum(mecLocs$antennas$MEC == -1)))
 
 ggmap(map) + 
-  ggplot2::stat_contour(data=loggedMecFrame, aes(z=intensity, fill=..level..),
-               geom = "polygon", alpha=0.3) +
+  ggplot2::stat_contour(data = loggedMecLocsMat,
+                        aes(z=intensity, fill=..level..), geom = "polygon",
+                        alpha=0.3) +
   scale_fill_gradient(low = "gray", high = "black") +
   scale_colour_gradient(low = "gray", high = "black") +
   geom_point(data=mecLocs$pos, aes(x=lon, y=lat), shape="+", size=10) +
   labs(fill = TeX("$log(1 + \\lambda (lon, lat))$")) 
-
 
 
 # Too computational intensive (~ 6h in Madrid-center)
