@@ -103,6 +103,13 @@ mecIntMat <- mecIntManhattan(lonL = region$bl$lon, lonR = region$tr$lon,
 loggedMecInt <- intMat2Frame(intMat = mecIntMat$matrix,
                          latAxis = mecIntMat$latAxis,
                          lonAxis = mecIntMat$lonAxis)
+
+# Get the map
+mapRegion <- c(left = region$bl$lon, bottom = region$bl$lat,
+               right = region$tr$lon, top = region$tr$lat)
+map <- get_map(mapRegion, zoom = region$plotDetails$zoom, source = "stamen",
+              maptype = region$plotDetails$mapType)
+
 ggmap(map) + 
   ggplot2::stat_contour(data = loggedMecInt, aes(z=intensity, fill=..level..),
                geom = "polygon", alpha=0.3) +
@@ -111,29 +118,55 @@ ggmap(map) +
   labs(fill = TeX("$log(1 + \\lambda (lon, lat))$")) 
 
 
-# Obtain the MEC server locations
+# Obtain the MEC server locations using the antenna-decrease approach
 numMECs <- 30
 mecLocs <- mecLocationAntenna(mecIntMatrix = mecIntMat$matrix,
                               lonAxis = mecIntMat$lonAxis,
                               latAxis = mecIntMat$latAxis, maxDiss = maxDiss,
-                              numMECs = numMECs, antLons = allAntennas$lon,
+                              numMECs = NULL, antLons = allAntennas$lon,
                               antLats = allAntennas$lat,
                               antRadios = as.character(allAntennas$radio),
                               lonL = region$bl$lon, lonR = region$tr$lon,
                               latB = region$bl$lat, latT = region$tr$lat) 
+cdfAntennaRed <- ecdf(mecLocs$pos$coveredAs)
+
+mecLocs <- mecLocationDig(mecIntMatrix = mecIntMat$matrix,
+                              lonAxis = mecIntMat$lonAxis,
+                              latAxis = mecIntMat$latAxis, maxDiss = maxDiss,
+                              numMECs = NULL, antLons = allAntennas$lon,
+                              antLats = allAntennas$lat,
+                              antRadios = as.character(allAntennas$radio),
+                              lonL = region$bl$lon, lonR = region$tr$lon,
+                              latB = region$bl$lat, latT = region$tr$lat) 
+cdfDig <- ecdf(mecLocs$pos$coveredAs)
+
 loggedMecLocsMat <- intMat2Frame(intMat = log(1 + mecLocs$modMat),
                          latAxis = mecIntMat$latAxis,
                          lonAxis = mecIntMat$lonAxis)
+mecLocs$pos$circleSize <- ceil(10 * mecLocs$pos$coveredAs /
+                                      max(mecLocs$pos$coveredAs))
 cat(sprintf("uncovered antennas: %d", sum(mecLocs$antennas$MEC == -1)))
 
+
+# COmpare CDFs
+plot(x=cdfDig, pch=19, col="red", xlab=TeX("C_A"), ylab=TeX("$P(X)$"),
+     main = "dig-out vs antenna-red CDFs")
+lines(x=cdfAntennaRed, pch=18, col="blue", lty=2)
+legend(1, 95, legend=c("Line 1", "Line 2"),
+       col=c("red", "blue"), lty=1:2, cex=0.8)
+plot(x=cdfDig,col="red", legend="dig-out")
+lines(x=cdfAntennaRed,col="blue", legend="antenna-reduce")
+
+# Plot last obtained MEC locations
 ggmap(map) + 
   ggplot2::stat_contour(data = loggedMecLocsMat,
                         aes(z=intensity, fill=..level..), geom = "polygon",
                         alpha=0.3) +
   scale_fill_gradient(low = "gray", high = "black") +
   scale_colour_gradient(low = "gray", high = "black") +
-  geom_point(data=mecLocs$pos, aes(x=lon, y=lat), shape="+", size=10) +
-  labs(fill = TeX("$log(1 + \\lambda (lon, lat))$")) 
+  geom_point(data=mecLocs$pos, aes(x=lon, y=lat, size=circleSize), shape="circle") +
+  labs(size = TeX(sprintf("$ceil\\left(\\frac{10·C_A(lon,lat)}{%d} \\right)$",
+                              max(mecLocs$pos$coveredAs))))
 
 
 # Too computational intensive (~ 6h in Madrid-center)
@@ -146,12 +179,6 @@ ggmap(map) +
 #                         longisLen = LON_SAMPLES, intF = mecIntF) 
 # timestamp()
 
-
-
-mapRegion <- c(left = region$bl$lon, bottom = region$bl$lat,
-               right = region$tr$lon, top = region$tr$lat)
-map <- get_map(mapRegion, zoom = region$plotDetails$zoom, source = "stamen",
-              maptype = region$plotDetails$mapType)
 
 
 
