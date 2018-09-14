@@ -1706,6 +1706,8 @@ mecIntManhattan <- function(lonL, lonR, latB, latT, lonSamples, latSamples,
 #' @param lonR right longitude of the region
 #' @param latB bottom latitude of the region
 #' @param latT top latitude of the region
+#' @param letNoAssign (optional) boolean determining if it is allowed that an
+#' AAU is not assigned. If not specified, antennas can be unusigned.
 #' @param numMECs (optional) number of MEC PoPs to generate. If not specified,
 #' the function generates MEC locations until all antennas are covered.
 #' femto-cell)
@@ -1713,6 +1715,8 @@ mecIntManhattan <- function(lonL, lonR, latB, latT, lonSamples, latSamples,
 #' antennas=data.frame(lon, lat, MEC)
 #' @note ret$pos$intMeas is the integral arround the MEC location
 #'       ret$antennas$MEC references the MEC's row in ret$pos
+#' @note some of the antennas can be uncovered, these ones will have
+#'       return$antennas$MEC=-1. The parameter letNoAssign controls this.
 #' @note Algorithm overview:
 #' 1. while mecPoPs < numMECs:
 #' 2.   nextMEC <- max_(x,y) mecIntMatix(x,y)
@@ -1721,7 +1725,14 @@ mecIntManhattan <- function(lonL, lonR, latB, latT, lonSamples, latSamples,
 #' 5.   mecIntMatrix[Ball(nextMEC,min(maxDiss))] = 0
 mecLocationDig <- function(mecIntMatrix, lonAxis, latAxis, maxDiss,
                            antLons, antLats, antRadios,
-                           lonL, lonR, latB, latT, numMECs = NULL) {
+                           lonL, lonR, latB, latT, letNoAssign = TRUE,
+                           numMECs = NULL) {
+  if (!is.null(numMECs) & letNoAssign == FALSE) {
+    cat("You are invoking mecLocationDig() with numMECS specified and",
+        "letNoAssign = FALSE. The function can't guarantee that, EXIT!")
+    return(NULL)
+  }
+  
   # Estimation of longitude and latitude distance of one meter
   lonD <- destination(lat = latT, lon = lonL, distance = 1, bearing = 90)
   lonMeter <- abs(lonD$lon2 - lonD$lon1)
@@ -1737,124 +1748,196 @@ mecLocationDig <- function(mecIntMatrix, lonAxis, latAxis, maxDiss,
   maxAntRad <- max(unlist(maxDiss))
   minAntRad <- min(unlist(maxDiss))
   putMoreMECs <- TRUE
+  moreRounds <- ifelse(test = letNoAssign, yes = FALSE, no = TRUE)
   
   
-  while (putMoreMECs & length(mecLons) <= 98) {
-    maxMecInts <- max(mecIntMatrix)
-    mecCoord <- which(maxMecInts == mecIntMatrix, arr.ind = TRUE)
-    mecCoord_ <- which(maxMecInts == mecIntMatrix, arr.ind = TRUE)
-    mecCoord <- c(lonAxis[mecCoord[1,1]], latAxis[mecCoord[1,2]])
-    mecLons <- c(mecLons, mecCoord[1])
-    mecLats <- c(mecLats, mecCoord[2])
-    mecCoveredAs <- c(mecCoveredAs, 0)
-    mecInts <- c(mecInts, maxMecInts)
-    cat(sprintf("MEC number: %d\n", length(mecLons)))
-    cat(sprintf("  uncovered antennas: %d\n", sum(!antCovered)))
-    cat(sprintf("  location: (%f,%f)\n", mecCoord[1], mecCoord[2]))
-    cat(sprintf("  location indexes: (%d,%d)\n", mecCoord_[1], mecCoord_[2]))
-    
-    # Get the square surounding the MEC
-    arqSq <- aroundSquare(lon = mecCoord[1], lat = mecCoord[2],
-                         lonL = lonL, lonR = lonR, latB = latB, latT = latT,
-                         halfSide = maxAntRad)
-    leftLim <- arqSq$left
-    rightLim <- arqSq$right
-    bottomLim <- arqSq$bottom
-    topLim <- arqSq$top
-    cat(sprintf("  MEC square:: left: %f, right: %f, top: %f, down: %f\n",
-                leftLim, rightLim, topLim, bottomLim))
-    
-    
-    # Get the indexes of antennas inside the MEC square which are not covered
-    # yet
-    antInd <- (antLons > leftLim & antLons < rightLim) &
-      (antLats > bottomLim & antLats < topLim) &
-      !antCovered
-    cat(sprintf("  num inside antennas: %d\n", sum(antInd)))
-    antInd <- which(TRUE == antInd)
-    
-    # Iterate through the antennas covered by the MEC
-    for (ai in antInd) {
-      ant2MecDis <- abs(antLons[ai] - mecCoord[1]) / lonMeter +
-        abs(antLats[ai] - mecCoord[2]) / latMeter # Manhattan distance
+  
+  while (moreRounds) {
+    while (putMoreMECs) {
+      maxMecInts <- max(mecIntMatrix)
+      mecCoord <- which(maxMecInts == mecIntMatrix, arr.ind = TRUE)
+      mecCoord_ <- which(maxMecInts == mecIntMatrix, arr.ind = TRUE)
+      mecCoord <- c(lonAxis[mecCoord[1,1]], latAxis[mecCoord[1,2]])
+      mecLons <- c(mecLons, mecCoord[1])
+      mecLats <- c(mecLats, mecCoord[2])
+      mecCoveredAs <- c(mecCoveredAs, 0)
+      mecInts <- c(mecInts, maxMecInts)
+      cat(sprintf("MEC number: %d\n", length(mecLons)))
+      cat(sprintf("  max=%d, amount=%d\n", maxMecInts, nrow(mecCoord_)))
+      cat(sprintf("  uncovered antennas: %d\n", sum(!antCovered)))
+      cat(sprintf("  location: (%f,%f)\n", mecCoord[1], mecCoord[2]))
+      cat(sprintf("  location indexes: (%d,%d)\n", mecCoord_[1], mecCoord_[2]))
       
-      # Select antenna's maximum distance
-      mDis <- NULL
-      if (antRadios[ai] == "LTE") {
-        mDis <- maxDiss$LTE
-      } else if(antRadios[ai] == "femto-cell") {
-        mDis <- maxDiss$femtoCell
-      } else if(antRadios[ai] == "macro-cell") {
-        mDis <- maxDiss$macroCell
+      # Get the square surounding the MEC
+      arqSq <- aroundSquare(lon = mecCoord[1], lat = mecCoord[2],
+                           lonL = lonL, lonR = lonR, latB = latB, latT = latT,
+                           halfSide = maxAntRad)
+      leftLim <- arqSq$left
+      rightLim <- arqSq$right
+      bottomLim <- arqSq$bottom
+      topLim <- arqSq$top
+      cat(sprintf("  MEC square:: left: %f, right: %f, top: %f, down: %f\n",
+                  leftLim, rightLim, topLim, bottomLim))
+      
+      
+      # Get the indexes of antennas inside the MEC square which are not covered
+      # yet
+      antInd <- (antLons > leftLim & antLons < rightLim) &
+        (antLats > bottomLim & antLats < topLim) &
+        !antCovered
+      cat(sprintf("  num inside antennas: %d\n", sum(antInd)))
+      antInd <- which(TRUE == antInd)
+      
+      # Iterate through the antennas covered by the MEC
+      for (ai in antInd) {
+        ant2MecDis <- abs(antLons[ai] - mecCoord[1]) / lonMeter +
+          abs(antLats[ai] - mecCoord[2]) / latMeter # Manhattan distance
+        if (ai == 4816) {
+          cat(sprintf("  Aproblem(%f,%f) at distance = %f\n",
+                      antLons[ai], antLats[ai], ant2MecDis))
+        }
+        
+        # Select antenna's maximum distance
+        mDis <- NULL
+        if (antRadios[ai] == "LTE") {
+          mDis <- maxDiss$LTE
+        } else if(antRadios[ai] == "femto-cell") {
+          mDis <- maxDiss$femtoCell
+        } else if(antRadios[ai] == "macro-cell") {
+          mDis <- maxDiss$macroCell
+        }
+        
+        # If the antenna can access the MEC, associate and decrease its
+        # suroundings
+        if (ant2MecDis <= mDis) {
+          antCovered[ai] <- TRUE
+          antMecAsoc[ai] <- length(mecLons)
+          mecCoveredAs[length(mecLons)] <- mecCoveredAs[length(mecLons)] + 1
+          
+          antSqLims <- aroundSquare(lon = antLons[ai], lat = antLats[ai],
+                       lonL = lonL, lonR = lonR, latB = latB, latT = latT,
+                       halfSide = mDis)
+          
+          # Coordinates falling inside the antenna square
+          antLonInds <- which(lonAxis > antSqLims$left &
+                                lonAxis < antSqLims$right)
+          antLatInds <- which(latAxis > antSqLims$bottom &
+                                latAxis < antSqLims$top)
+          
+          # Reduce the mec intensity matrix around the given antenna
+          for (intLon in antLonInds) {
+            for (intLat in antLatInds) {
+              ant2CoorD <- abs(antLons[ai] - lonAxis[intLon]) / lonMeter +
+                abs(antLats[ai] - latAxis[intLat]) / latMeter # Manhattan distance
+              
+              if (ant2CoorD <= mDis) {
+                mecIntMatrix[intLon, intLat] <- mecIntMatrix[intLon, intLat] - 1
+              }
+            }
+          }
+        }
+        
       }
       
-      # If the antenna can access the MEC, associate and decrease its
-      # suroundings
-      if (ant2MecDis <= mDis) {
-        antCovered[ai] <- TRUE
-        antMecAsoc[ai] <- length(mecLons)
-        mecCoveredAs[length(mecLons)] <- mecCoveredAs[length(mecLons)] + 1
+      cat(sprintf("  num covered antennas: %d\n", mecCoveredAs[length(mecLons)] ))
+      
+      # Put to zero the located MEC PoPs suroundings
+      zeroSq <- aroundSquare(lon = mecCoord[1], lat = mecCoord[2],
+                           lonL = lonL, lonR = lonR, latB = latB, latT = latT,
+                           halfSide = minAntRad)
+      leftLim <- zeroSq$left
+      rightLim <- zeroSq$right
+      bottomLim <- zeroSq$bottom
+      topLim <- zeroSq$top
+      
+      # Coordinates falling inside the MEC PoP square
+      antLonInds <- which(lonAxis > zeroSq$left & lonAxis < zeroSq$right)
+      antLatInds <- which(latAxis > zeroSq$bottom & latAxis < zeroSq$top)
+      
+      # Turn down to zero points inside the MEC PoP circle
+      for (intLon in antLonInds) {
+        for (intLat in antLatInds) {
+          mec2Coord <- abs(mecCoord[1] - lonAxis[intLon]) / lonMeter +
+            abs(mecCoord[2] - latAxis[intLat]) / latMeter # Manhattan distance
+          
+          if (mec2Coord <= minAntRad) {
+            mecIntMatrix[intLon, intLat] <- 0
+          }
+        }
+      }
+      #mecIntMatrix[mecIntMatrix <= 0] <- 0
+      
+      # Check if still more MEC PoPs must be located
+      if (!is.null(numMECs)) {
+        putMoreMECs <- length(mecLons) < numMECs
+      }
+      else { # if maxMecInts=0, no more MEC PoP can be properly selected
+        putMoreMECs <- maxMecInts > 0
+      }
+    }
+    mecIntMatrix[mecIntMatrix < 0] <- 0
+    
+    cat("OOOOOUT\n")
+    cat("sum(!antCovered)=%d\n", sum(!antCovered))
+    Sys.sleep(5)
+    
+    # Repeat the process and increase by 1 the non-covered antennas suroundings
+    if (!letNoAssign & sum(!antCovered) > 0) {
+      moreRounds <- TRUE
+      putMoreMECs <- TRUE
+      cat(sprintf("\n===> moreROUNDS check = %s <===\n", moreRounds))
+                              
+      cat("Non selected antennas:\n")
+      
+      for (ai in which(antCovered == FALSE)) {
+        cat(sprintf("  A(%f,%f)\n", antLons[ai], antLats[ai]))
+        # Select antenna's maximum distance
+        mDis <- NULL
+        if (antRadios[ai] == "LTE") {
+          mDis <- maxDiss$LTE
+        } else if(antRadios[ai] == "femto-cell") {
+          mDis <- maxDiss$femtoCell
+        } else if(antRadios[ai] == "macro-cell") {
+          mDis <- maxDiss$macroCell
+        }
         
-        antSqLims <- aroundSquare(lon = antLons[ai], lat = antLats[ai],
-                     lonL = lonL, lonR = lonR, latB = latB, latT = latT,
-                     halfSide = mDis)
+        # Increase by one the antena surroundings
+        increaseSq <- aroundSquare(lon = antLons[ai], lat = antLats[ai],
+                             lonL = lonL, lonR = lonR, latB = latB, latT = latT,
+                             halfSide = mDis)
+        leftLim <- increaseSq$left
+        rightLim <- increaseSq$right
+        bottomLim <- increaseSq$bottom
+        topLim <- increaseSq$top
+        
         
         # Coordinates falling inside the antenna square
-        antLonInds <- which(lonAxis > antSqLims$left &
-                              lonAxis < antSqLims$right)
-        antLatInds <- which(latAxis > antSqLims$bottom &
-                              latAxis < antSqLims$top)
+        lonInds <- which(lonAxis > increaseSq$left & lonAxis < increaseSq$right)
+        latInds <- which(latAxis > increaseSq$bottom & latAxis < increaseSq$top)
         
         # Reduce the mec intensity matrix around the given antenna
-        for (intLon in antLonInds) {
-          for (intLat in antLatInds) {
+        for (intLon in lonInds) {
+          for (intLat in latInds) {
             ant2CoorD <- abs(antLons[ai] - lonAxis[intLon]) / lonMeter +
               abs(antLats[ai] - latAxis[intLat]) / latMeter # Manhattan distance
             
             if (ant2CoorD <= mDis) {
-              mecIntMatrix[intLon, intLat] <- mecIntMatrix[intLon, intLat] - 1
+              mecIntMatrix[intLon, intLat] <- mecIntMatrix[intLon, intLat] + 1
             }
           }
         }
-      }
+      } 
       
+    } else if (!letNoAssign & sum(!antCovered) == 0) {
+      moreRounds <- FALSE
+      putMoreMECs <- FALSE
     }
-    
-    cat(sprintf("  num covered antennas: %d\n", mecCoveredAs[length(mecLons)] ))
-    
-    # Put to zero the located MEC PoPs suroundings
-    zeroSq <- aroundSquare(lon = mecCoord[1], lat = mecCoord[2],
-                         lonL = lonL, lonR = lonR, latB = latB, latT = latT,
-                         halfSide = minAntRad)
-    leftLim <- zeroSq$left
-    rightLim <- zeroSq$right
-    bottomLim <- zeroSq$bottom
-    topLim <- zeroSq$top
-    
-    # Coordinates falling inside the MEC PoP square
-    antLonInds <- which(lonAxis > zeroSq$left & lonAxis < zeroSq$right)
-    antLatInds <- which(latAxis > zeroSq$bottom & latAxis < zeroSq$top)
-    
-    # Turn down to zero points inside the MEC PoP circle
-    for (intLon in antLonInds) {
-      for (intLat in antLatInds) {
-        mec2Coord <- abs(mecCoord[1] - lonAxis[intLon]) / lonMeter +
-          abs(mecCoord[2] - latAxis[intLat]) / latMeter # Manhattan distance
-        
-        if (mec2Coord <= mDis) {
-          mecIntMatrix[intLon, intLat] <- 0
-        }
-      }
-    }
-    mecIntMatrix[mecIntMatrix <= 0] <- 0
-    
-    # Check if still more MEC PoPs must be located
-    if (!is.null(numMECs)) {
-      putMoreMECs <- length(mecLons) < numMECs
-    }
-    else {
-      putMoreMECs <- sum(!antCovered) > 0
-    }
+  }
+  
+  cat("Uncovered antennas:")
+  for (ai in which(antCovered == FALSE)) {
+    cat(sprintf("  A(%f,%f)\n",
+                antLons[ai], antLats[ai]))
   }
   
   

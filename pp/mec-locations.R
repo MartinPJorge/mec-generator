@@ -129,16 +129,19 @@ mecLocs <- mecLocationAntenna(mecIntMatrix = mecIntMat$matrix,
                               lonL = region$bl$lon, lonR = region$tr$lon,
                               latB = region$bl$lat, latT = region$tr$lat) 
 cdfAntennaRed <- ecdf(mecLocs$pos$coveredAs)
+medAntRed <- median(mecLocs$pos$coveredAs)
 
 mecLocs <- mecLocationDig(mecIntMatrix = mecIntMat$matrix,
                               lonAxis = mecIntMat$lonAxis,
                               latAxis = mecIntMat$latAxis, maxDiss = maxDiss,
-                              numMECs = NULL, antLons = allAntennas$lon,
+                              antLons = allAntennas$lon,
                               antLats = allAntennas$lat,
                               antRadios = as.character(allAntennas$radio),
                               lonL = region$bl$lon, lonR = region$tr$lon,
-                              latB = region$bl$lat, latT = region$tr$lat) 
+                              latB = region$bl$lat, latT = region$tr$lat,
+                              letNoAssign = FALSE, numMECs = NULL) 
 cdfDig <- ecdf(mecLocs$pos$coveredAs)
+medLocDig <- median(mecLocs$pos$coveredAs)
 
 loggedMecLocsMat <- intMat2Frame(intMat = log(1 + mecLocs$modMat),
                          latAxis = mecIntMat$latAxis,
@@ -152,7 +155,7 @@ cat(sprintf("uncovered antennas: %d", sum(mecLocs$antennas$MEC == -1)))
 plot(x=cdfDig, pch=19, col="red", xlab=TeX("C_A"), ylab=TeX("$P(X)$"),
      main = "dig-out vs antenna-red CDFs")
 lines(x=cdfAntennaRed, pch=18, col="blue", lty=2)
-legend(1, 95, legend=c("Line 1", "Line 2"),
+legend("bottomright", legend=c("dig-out", "red-antenna"),
        col=c("red", "blue"), lty=1:2, cex=0.8)
 plot(x=cdfDig,col="red", legend="dig-out")
 lines(x=cdfAntennaRed,col="blue", legend="antenna-reduce")
