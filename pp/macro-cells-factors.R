@@ -133,7 +133,7 @@ for (row in 1:nrow(regionSquares1)) {
     squareFactors <- c(squareFactors, currFactor)
     squareSideSqs <- c(squareSideSqs, currSquares)
     squareAvgs <- c(squareAvgs, currAvg)
-    cat(sprintf("found average: %d\n", currAvg))
+    cat(sprintf("found average: %f\n", currAvg))
   }
 }
 
