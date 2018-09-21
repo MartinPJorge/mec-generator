@@ -10,10 +10,10 @@ library(latex2exp)
 library(metR)
 
 REGIONS <- "../data/regions.json"
-REGION_NAME <- "Madrid-center"
-PEOPLE_MAT <- "../data/people/Madrid-center/people-lambda"
-PEOPLE_LONS <- "../data/people/Madrid-center/people-longitudes"
-PEOPLE_LATS <- "../data/people/Madrid-center/people-latitudes"
+REGION_NAME <- "Madrid-centro"
+PEOPLE_MAT <- "../data/people/Madrid-centro/people-intensity-matrix.csv"
+PEOPLE_LONS <- "../data/people/Madrid-centro/people-intensity-longitudes"
+PEOPLE_LATS <- "../data/people/Madrid-centro/people-intensity-latitudes"
 OUT_SQUARE_FACTORS <- NULL
 CLI <- FALSE # flag to tell if file is executed from CLI
 

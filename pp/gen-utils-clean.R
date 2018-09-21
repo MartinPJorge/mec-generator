@@ -1425,7 +1425,7 @@ findSquare <- function(topLat, area) {
                             distance = side)$lon2
   lonSize <- (lonSizeTop + lonSizeBottom) / 2
   
-  return(list(lonSize = lonSize, latSize = (topLat - bottomLat) / 2))
+  return(list(lonSize = lonSize, latSize = topLat - bottomLat))
 }
 
 
