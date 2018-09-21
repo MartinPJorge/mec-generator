@@ -20,7 +20,7 @@ CLI <- FALSE # flag to tell if file is executed from CLI
 # How big are the cells where we now how many AAUs are
 # according to Luca Cominardi, we have 12 AAUs per square kilometer
 SQUARE_SIDE <- 1 # expresed in kilometers
-SQUARE_AAUs <- 12
+SQUARE_AAUs <- 6
 REPULSION <- 1 / (2*ceil(sqrt(SQUARE_AAUs))) # expressed in kilometers
 
 
@@ -85,8 +85,7 @@ squareSideSqs <- c()
 squareAvgs <- c()
 
 for (row in 1:nrow(regionSquares1)) {
-  print("Square")
-  print(row)
+  cat(sprintf("Square: %d\n", row))
   currAvg <- Inf
   currFactor <- Inf
   currSquares <- Inf
@@ -105,12 +104,10 @@ for (row in 1:nrow(regionSquares1)) {
     # SQUARE_AAUs
     for (squares in baseSideSquares) {
       repulsion <- 1 / (2*squares) # expressed in kilometers
-      print("  #suqres")
-      print(squares)
+      cat(sprintf("  #squares: %d\n", squares))
       
       for (factor_ in intFactors) {
-        print("  factor")
-        print(factor_)
+        cat(sprintf("  factor: %d\n", factor_))
         lambdaSq <- function(lon, lat) {
           return(factor_ / square$avgAAUs * peopleIntpF(lon, lat))
         }
@@ -136,8 +133,7 @@ for (row in 1:nrow(regionSquares1)) {
     squareFactors <- c(squareFactors, currFactor)
     squareSideSqs <- c(squareSideSqs, currSquares)
     squareAvgs <- c(squareAvgs, currAvg)
-    print("found average")
-    print(currAvg)
+    cat(sprintf("found average: %d\n", currAvg))
   }
 }
 

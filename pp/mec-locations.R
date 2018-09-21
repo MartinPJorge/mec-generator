@@ -14,21 +14,26 @@ REGION_NAME <- "Madrid-center"
 MEC_GEN_PARAMS <- "../data/mec-gen-params.json"
 LAT_SAMPLES <- 100
 LON_SAMPLES <- 100
-NUM_MECs <- 10
+NUM_MECs <- NULL
 MACRO_CELLS_CSV <- "../data/antennas/Madrid-center/macro-cells.csv"
 ANTENNAS_CSV <- "../data/antennas/Madrid-center/TEL-and-femtos.csv" # femto cells and LTE
 OPERATOR <- 7 # net id of Telefonica
 MEC_LOCATIONS_CSV <- "../data/antennas/Madrid-center/MEC-locations.csv"
 CLI <- FALSE # flag to tell if file is executed from CLI
+METHOD <- "basicm1m2"
+RADIO_TECH <- "FDD30kHz2sSPS"
 
 
 
 # Parse arguments if existing to change default global variables
 args <- commandArgs(trailingOnly=TRUE)
 if(length(args) > 0)
-  if(length(args) != 9) {
+  if(length(args) != 11) {
     stop(paste("Arguments to receive are: ",
-      "regionID latSamples lonSamples mecParamsJSON numMECs macro-cells.csv LTEandFEMTO.csv operatorNET MEClocations.csv"))
+      "regionID latSamples lonSamples mecParamsJSON numMECs",
+      "radioTech[FDD30kHz2sSPS, TDD120kHz7sSPS, FDD120kHz7sSPS]",
+      "method[basicm1, basicm2, dig-outm1, dig-outm2, basicm1m2, dig-outm1m2]",
+      "macro-cells.csv LTEandFEMTO.csv operatorNET MEClocations.csv"))
   } else {
     CLI <- TRUE
     REGION_NAME <- args[1]
@@ -36,10 +41,13 @@ if(length(args) > 0)
     LAT_SAMPLES <- args[3]
     LON_SAMPLES <- arg[4]
     NUM_MECs <- as.numeric(args[5])
-    MACRO_CELLS_CSV <- args[6]
-    ANTENNAS_CSV <- args[7]
-    OPERATOR <- as.numeric(args[8])
-    MEC_LOCATIONS_CSV <- args[9]
+    NUM_MECs <- ifelse(NUM_MECs < 0, yes = NULL, no = NUM_MECs)
+    RADIO_TECH <- args[6]
+    METHOD <- args[7]
+    MACRO_CELLS_CSV <- args[8]
+    ANTENNAS_CSV <- args[9]
+    OPERATOR <- as.numeric(args[10])
+    MEC_LOCATIONS_CSV <- args[11]
   }
 
 
@@ -76,10 +84,12 @@ net <- c()
 # Loop LTE and femto-cell antennas
 for (row in 1:nrow(antennas)) {
   antenna <- antennas[row,]
-  lons <- c(lons, antenna$lon)
-  lats <- c(lats, antenna$lat)
-  radio <- c(radio, as.character(antenna$radio))
-  net <- c(net, antenna$net)
+  if (antenna$radio != "LTE") {
+    lons <- c(lons, antenna$lon)
+    lats <- c(lats, antenna$lat)
+    radio <- c(radio, as.character(antenna$radio))
+    net <- c(net, antenna$net)
+  }
 }
 for (row in 1:nrow(macroCells)) {
   macroCell <- macroCells[row,]
@@ -88,21 +98,96 @@ for (row in 1:nrow(macroCells)) {
   radio <- c(radio, as.character(macroCell$radio))
   net <- c(net, OPERATOR)
 }
-allAntennas <- data.frame(radio = radio, net = net, lon = lons, lat = lats)
+all5gAntennas <- data.frame(radio = radio, net = net, lon = lons, lat = lats)
 
-# Generate the MEC server locations intensity function
-maxDiss <- list(LTE = mecParams$LTE$maxDistance,
-                macroCell = mecParams$smallCell$maxDistance,
-                femtoCell = mecParams$femtoCell$maxDistance)
 
-mecIntMat <- mecIntManhattan(lonL = region$bl$lon, lonR = region$tr$lon,
-                latB = region$bl$lat, latT = region$tr$lat,
-                lonSamples = LON_SAMPLES, latSamples = LAT_SAMPLES,
-                antLons = allAntennas$lon, antLats = allAntennas$lat,
-                antRadios = as.character(allAntennas$radio), maxDiss = maxDiss)
-loggedMecInt <- intMat2Frame(intMat = mecIntMat$matrix,
-                         latAxis = mecIntMat$latAxis,
-                         lonAxis = mecIntMat$lonAxis)
+##################################
+# Obtain the intensity functions #
+##################################
+mecIntMat <- NULL
+mecIntMats <- NULL
+maxDiss <- NULL
+maxDisss <- NULL
+loggedMecInt <- NULL
+loggedMecIntM1 <- NULL
+loggedMecIntM2 <- NULL
+
+# Get generation parameters depending on the antennas radio technologies
+if (RADIO_TECH == "FDD30kHz2sSPS") {
+  mecParams <- list(LTE = mecParams$FDD30kHz2sSPS$LTE,
+                    macroCell = mecParams$FDD30kHz2sSPS$macroCell,
+                    femtoCell = mecParams$FDD30kHz2sSPS$femtoCell,
+                    maxAntennas = mecParams$maxAntennas)
+} else if (RADIO_TECH == "TDD120kHz7sSPS") {
+  mecParams <- list(LTE = mecParams$TDD120kHz7sSPS$LTE,
+                    macroCell = mecParams$TDD120kHz7sSPS$macroCell,
+                    femtoCell = mecParams$TDD120kHz7sSPS$femtoCell,
+                    maxAntennas = mecParams$maxAntennas)
+} else if (RADIO_TECH == "FDD120kHz7sSPS") {
+  mecParams <- list(LTE = mecParams$FDD120kHz7sSPS$LTE,
+                    macroCell = mecParams$FDD120kHz7sSPS$macroCell,
+                    femtoCell = mecParams$FDD120kHz7sSPS$femtoCell,
+                    maxAntennas = mecParams$maxAntennas)
+}
+
+if (METHOD == "basicm1m2" | METHOD == "dig-outm1m2") {
+  # Create the maximum distances for both M1 and M2 network rings
+  maxDissM1 <- list(LTE = mecParams$LTE$maxDistanceM1,
+                  macroCell = mecParams$macroCell$maxDistanceM1,
+                  femtoCell = mecParams$femtoCell$maxDistanceM1)
+  maxDissM2 <- list(LTE = mecParams$LTE$maxDistanceM2,
+                  macroCell = mecParams$macroCell$maxDistanceM2,
+                  femtoCell = mecParams$femtoCell$maxDistanceM2)
+  maxDisss <- list(m1 = maxDissM1, m2 = maxDissM2)
+  
+  
+  # Generate the intensity functions corresponding to M1 and M2 network rings
+  mecIntMatM1 <- mecIntManhattan(lonL = region$bl$lon, lonR = region$tr$lon,
+                  latB = region$bl$lat, latT = region$tr$lat,
+                  lonSamples = LON_SAMPLES, latSamples = LAT_SAMPLES,
+                  antLons = all5gAntennas$lon, antLats = all5gAntennas$lat,
+                  antRadios = as.character(all5gAntennas$radio),
+                  maxDiss = maxDissM1)
+  mecIntMatM2 <- mecIntManhattan(lonL = region$bl$lon, lonR = region$tr$lon,
+                  latB = region$bl$lat, latT = region$tr$lat,
+                  lonSamples = LON_SAMPLES, latSamples = LAT_SAMPLES,
+                  antLons = all5gAntennas$lon, antLats = all5gAntennas$lat,
+                  antRadios = as.character(all5gAntennas$radio),
+                  maxDiss = maxDissM2)
+  mecIntMats <- list(m1 = mecIntMatM1, m2 = mecIntMatM2)
+  
+  # Log the intensity matrixes
+  loggedMecIntM1 <- intMat2Frame(intMat = log(1 + mecIntMatM1$matrix),
+                           latAxis = mecIntMatM1$latAxis,
+                           lonAxis = mecIntMatM1$lonAxis)
+  loggedMecIntM2 <- intMat2Frame(intMat = log(1 + mecIntMatM2$matrix),
+                           latAxis = mecIntMatM2$latAxis,
+                           lonAxis = mecIntMatM2$lonAxis)
+} else {
+  # Obtain the M1 or M2 distances antenna-MEC
+  if (METHOD == "basicm1" | METHOD == "digoutm1"){
+    maxDiss <- list(LTE = mecParams$LTE$maxDistanceM1,
+                    macroCell = mecParams$macroCell$maxDistanceM1,
+                    femtoCell = mecParams$femtoCell$maxDistanceM1)
+  } else {
+    maxDiss <- list(LTE = mecParams$LTE$maxDistanceM2,
+                    macroCell = mecParams$macroCell$maxDistanceM2,
+                    femtoCell = mecParams$femtoCell$maxDistanceM2)
+  }
+  
+  # Generate the intensity functions corresponding to M1 and M2 network rings
+  mecIntMat <- mecIntManhattan(lonL = region$bl$lon, lonR = region$tr$lon,
+                  latB = region$bl$lat, latT = region$tr$lat,
+                  lonSamples = LON_SAMPLES, latSamples = LAT_SAMPLES,
+                  antLons = all5gAntennas$lon, antLats = all5gAntennas$lat,
+                  antRadios = as.character(all5gAntennas$radio),
+                  maxDiss = maxDiss)
+  
+  # Log the intensity matrixes
+  loggedMecInt <- intMat2Frame(intMat = log(1 + mecIntMat$matrix),
+                           latAxis = mecIntMat$latAxis,
+                           lonAxis = mecIntMat$lonAxis)
+}
 
 # Get the map
 mapRegion <- c(left = region$bl$lon, bottom = region$bl$lat,
@@ -110,6 +195,8 @@ mapRegion <- c(left = region$bl$lon, bottom = region$bl$lat,
 map <- get_map(mapRegion, zoom = region$plotDetails$zoom, source = "stamen",
               maptype = region$plotDetails$mapType)
 
+# Plot the intensity function
+# TODO - when m1m2 METHOD is selected, only one can be drawn
 ggmap(map) + 
   ggplot2::stat_contour(data = loggedMecInt, aes(z=intensity, fill=..level..),
                geom = "polygon", alpha=0.3) +
@@ -118,30 +205,61 @@ ggmap(map) +
   labs(fill = TeX("$log(1 + \\lambda (lon, lat))$")) 
 
 
-# Obtain the MEC server locations using the antenna-decrease approach
-numMECs <- 30
-mecLocs <- mecLocationAntenna(mecIntMatrix = mecIntMat$matrix,
-                              lonAxis = mecIntMat$lonAxis,
-                              latAxis = mecIntMat$latAxis, maxDiss = maxDiss,
-                              numMECs = NULL, antLons = allAntennas$lon,
-                              antLats = allAntennas$lat,
-                              antRadios = as.character(allAntennas$radio),
-                              lonL = region$bl$lon, lonR = region$tr$lon,
-                              latB = region$bl$lat, latT = region$tr$lat) 
+
+###################################
+# Obtain the MEC server locations #
+###################################
+if (METHOD == "basicm1" | METHOD == "basicm2") {
+  mecLocs <- mecLocationAntenna(mecIntMatrix = mecIntMat$matrix,
+                                lonAxis = mecIntMat$lonAxis,
+                                latAxis = mecIntMat$latAxis, maxDiss = maxDiss,
+                                numMECs = NUM_MECs, antLons = all5gAntennas$lon,
+                                antLats = all5gAntennas$lat,
+                                antRadios = as.character(all5gAntennas$radio),
+                                lonL = region$bl$lon, lonR = region$tr$lon,
+                                latB = region$bl$lat, latT = region$tr$lat) 
+} else if (METHOD == "dig-outm1" | METHOD == "dig-outm2") {
+  mecLocs <- mecLocationDig(mecIntMatrix = mecIntMat$matrix,
+                                lonAxis = mecIntMat$lonAxis,
+                                latAxis = mecIntMat$latAxis, maxDiss = maxDiss,
+                                numMECs = NUM_MECs, antLons = all5gAntennas$lon,
+                                antLats = all5gAntennas$lat,
+                                antRadios = as.character(all5gAntennas$radio),
+                                lonL = region$bl$lon, lonR = region$tr$lon,
+                                latB = region$bl$lat, latT = region$tr$lat) 
+} else if (METHOD == "basicm1m2") {
+  mats <- list(m1 = mecIntMats$m1$matrix, m2 = mecIntMats$m2$matrix)
+  mecLocs <- mecLocationAntennaM1M2(mecIntMatrixs = mats,
+                                lonAxis = mecIntMats$m1$lonAxis,
+                                latAxis = mecIntMats$m1$latAxis,
+                                maxDisss = maxDisss, numMECs = NUM_MECs,
+                                antLons = all5gAntennas$lon,
+                                antLats = all5gAntennas$lat,
+                                antRadios = as.character(all5gAntennas$radio),
+                                maxAnts = list(m1 = mecParams$maxAntennas$M1,
+                                               m2 = mecParams$maxAntennas$M2),
+                                lonL = region$bl$lon, lonR = region$tr$lon,
+                                latB = region$bl$lat, latT = region$tr$lat) 
+} else if (METHOD == "dig-outm1m2") {
+  mecIntMats <- list(m1 = mecIntMatM1, m2 = mecIntMatM2)
+  mats <- list(m1 = mecIntMats$m1$matrix, m2 = mecIntMats$m2$matrix)
+  mecLocs <- mecLocationDigM1M2(mecIntMatrix = mats,
+                                lonAxis = mecIntMats$m1$lonAxis,
+                                latAxis = mecIntMats$m1$latAxis,
+                                maxDisss = maxDisss, numMECs = NUM_MECs,
+                                antLons = all5gAntennas$lon,
+                                antLats = all5gAntennas$lat,
+                                antRadios = as.character(all5gAntennas$radio),
+                                maxAnts = list(m1 = mecParams$maxAntennas$M1,
+                                               m2 = mecParams$maxAntennas$M2),
+                                lonL = region$bl$lon, lonR = region$tr$lon,
+                                latB = region$bl$lat, latT = region$tr$lat) 
+}
+
+# Get the CDF of covered antennas
 cdfAntennaRed <- ecdf(mecLocs$pos$coveredAs)
 medAntRed <- median(mecLocs$pos$coveredAs)
 
-mecLocs <- mecLocationDig(mecIntMatrix = mecIntMat$matrix,
-                              lonAxis = mecIntMat$lonAxis,
-                              latAxis = mecIntMat$latAxis, maxDiss = maxDiss,
-                              antLons = allAntennas$lon,
-                              antLats = allAntennas$lat,
-                              antRadios = as.character(allAntennas$radio),
-                              lonL = region$bl$lon, lonR = region$tr$lon,
-                              latB = region$bl$lat, latT = region$tr$lat,
-                              letNoAssign = FALSE, numMECs = NULL) 
-cdfDig <- ecdf(mecLocs$pos$coveredAs)
-medLocDig <- median(mecLocs$pos$coveredAs)
 
 loggedMecLocsMat <- intMat2Frame(intMat = log(1 + mecLocs$modMat),
                          latAxis = mecIntMat$latAxis,
@@ -174,8 +292,8 @@ ggmap(map) +
 
 # Too computational intensive (~ 6h in Madrid-center)
 # timestamp()
-# mecIntF <- mecGenInt(lons = allAntennas$lon, lats = allAntennas$lat,
-#           radios = allAntennas$radio, maxDiss = maxDiss)
+# mecIntF <- mecGenInt(lons = all5gAntennas$lon, lats = all5gAntennas$lat,
+#           radios = all5gAntennas$radio, maxDiss = maxDiss)
 # mecIntFMat <- genIntMatrix(latis = c(region$bl$lat, region$tr$lat),
 #                         longis = c(region$bl$lon, region$tr$lon),
 #                         latisLen = LAT_SAMPLES,
