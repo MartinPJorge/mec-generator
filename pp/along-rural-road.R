@@ -26,7 +26,7 @@ print(length(args))
 if(length(args) > 0)
   if(length(args) != 1) {
     stop(cat("Arguments to receive are: ",
-      "OUT_CSV_PATH <- the CSV whith the generated antennas appended\n"))
+      "OUT_CSV_PATH <- the CSV with the generated road macro-cells\n"))
   } else {
     OUT_CSV_PATH <- args[1]
     isScript <- TRUE
@@ -84,9 +84,15 @@ roadAntennasW <- owin(xrange = c(region$bl$lon - 1, region$tr$lon + 1),
                       yrange = c(region$bl$lat - 10, region$tr$lat + 10))
 roadAntennasPPP <- ppp(x = roadAntennas$lon, y = roadAntennas$lat,
                        window = roadAntennasW)
-roadAndAllAntennas <- appendSmallCells(antennasDf = allRegionAntennas,
-                                 smallCellsPP = roadAntennasPPP,
-                                 operatorNET = TELEFONICA_NET)
+roadAndAllAntennas <- data.frame(lon = roadAntennasPPP$x,
+                                 lat = roadAntennasPPP$y,
+                                 radio = rep("macro-cell",
+                                             length(roadAntennasPPP$x)))
+
+# Deprecated - the previous version appended road cells with existing antennas
+# roadAndAllAntennas <- appendSmallCells(antennasDf = allRegionAntennas,
+#                                  smallCellsPP = roadAntennasPPP,
+#                                  operatorNET = TELEFONICA_NET)
 
 if (isScript) {
   write.csv(x = roadAndAllAntennas, file = OUT_CSV_PATH)

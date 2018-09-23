@@ -20,7 +20,7 @@ CLI <- FALSE # flag to tell if file is executed from CLI
 # How big are the cells where we now how many AAUs are
 # according to Luca Cominardi, we have 12 AAUs per square kilometer
 SQUARE_SIDE <- 1 # expresed in kilometers
-SQUARE_AAUs <- 6
+SQUARE_AAUs <- 12
 REPULSION <- 1 / (2*ceil(sqrt(SQUARE_AAUs))) # expressed in kilometers
 
 

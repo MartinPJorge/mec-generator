@@ -15,7 +15,7 @@ print(length(args))
 if(length(args) > 0)
   if(length(args) != 1) {
     stop(cat("Arguments to receive are: ",
-      "OUT_CSV_PATH <- the CSV whith the generated antennas appended\n"))
+      "OUT_CSV_PATH <- the CSV whith the generated femto-cells\n"))
   } else {
     OUT_CSV_PATH <- args[1]
     isScript <- TRUE
@@ -55,14 +55,12 @@ for (s in 1:length(region$skycrapers)) {
   femtoLons <- c(femtoLons, rep(skycraper$lon, femtoCells))
   femtoLats <- c(femtoLats, rep(skycraper$lat, femtoCells))
 }
-antennasAndFemtos <- manualAntennaAppend(antennas = regionAntennas,
-                                         newAntennas = data.frame(
-                                           lat = femtoLats, lon = femtoLons),
-                                         newRadio = "femto-cell", 
-                                         newNetOperator = TELEFONICA_NET)
+femtoCellsDf <- data.frame(lat = femtoLats, lon = femtoLons,
+                           radio = "femto-cell",
+                           net = TELEFONICA_NET)
 
 if (isScript) {
-  write.csv(antennasAndFemtos, file = OUT_CSV_PATH)
+  write.csv(femtoCellsDf, file = OUT_CSV_PATH)
 } else {
-  View(antennasAndFemtos)
+  View(femtoCellsDf)
 }

@@ -2548,6 +2548,54 @@ mecLocationDigM1M2 <- function(mecIntMatrixs, lonAxis, latAxis, maxDisss,
   return(list(pos = mecs, antennas = antennasAssoc, modMat = mecIntMatrix))
 }
 
+#' @description Given the locations of antennas of multiple generations, it
+#' obtains the average intensity function
+#' @param antLons list([[1]]=c(ant1lon, ...)) list of antenna longitude vectors
+#' @param antLats list([[1]]=c(ant1lat, ...)) list of antenna latitude vectors
+#' @param antRadios radio technology of each antenna (LTE, macro-cell, or
+#' femtocell)
+#' @param maxDiss maximum distance where a MEC server can be away from each
+#' antenna depending on its technology: list(LTE=, macroCell=,femtoCell=)
+#' @param lonL left longitude of the region
+#' @param lonR right longitude of the region
+#' @param latB bottom latitude of the region
+#' @param latT top latitude of the region
+#' @return average intensity matrix
+avgResultInt <- function(antLons, antLats, antRadios, maxDiss, lons, lats,
+                         lonL, lonR, latT, latB) {
+  avgInt <- matrix(data = 0, nrow = length(lons), ncols = length(lats))
+  
+  # Estimation of longitude and latitude distance of one meter
+  lonD <- destination(lat = latT, lon = lonL, distance = 1, bearing = 90)
+  lonMeter <- abs(lonD$lon2 - lonD$lon1)
+  latD <- destination(lat = latT, lon = lonL, distance = 1, bearing = 180)
+  latMeter <- abs(latD$lat2 - latD$lat1)
+  
+  # Iterate through each antenna generation
+  for (sim in 1:length(antLons)) {
+    # Increase by one the antenna surrounding
+    for (ai in 1:length(antLons[[sim]])) {
+      
+      # Get the maximum distance for the antenna radio technology
+      if (antRadios[[sim]][ai] == "LTE") {
+        mDis <- maxDiss$LTE
+      } else if(antRadios[[sim]][ai] == "femto-cell") {
+        mDis <- maxDiss$femtoCell
+      } else if(antRadios[[sim]][ai] == "macro-cell") {
+        mDis <- maxDiss$macroCell
+      }
+      
+      avgInt <- operateAroundCircle(matrix = avgInt, operation = "plus-one",
+                          cLon = antLons[[sim]][ai], cLat = antLats[[sim]][ai],
+                          r = mDis, lonAxis = lons, latAxis = lats, lonL = lonL,
+                          lonR = lonR, latB = latB, latT = latT,
+                          lonMeter = lonMeter, latMeter = latMeter)
+    }
+  }
+  
+  return(avgInt / length(antLons))
+}
+
 
 #' @description auxiliary debugging function that decreases the intF around
 #' each antenna. It is to check if it is coherent with the mecInt creation
