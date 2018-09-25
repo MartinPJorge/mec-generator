@@ -48,6 +48,28 @@ INT_MAT_M2 <- NULL
 OPERATOR <- 7
 ###########################################
 
+########### HOCES DEL CABRIEL PARAMS ###########
+REGIONS <- "../data/regions.json"
+REGION_NAME <- "Hoces-del-Cabriel"
+MEC_GEN_PARAMS <- "../data/mec-gen-params.json"
+LAT_SAMPLES <- 100
+LON_SAMPLES <- 100
+NUM_MECs <- NULL
+MACRO_CELLS_CSV <- paste("../data/antennas/Hoces-del-Cabriel/",
+  "antennas-1AAU/Hoces-del-Cabriel-1AAU-1.csv", sep = "")
+FEMTO_CELLS_CSV <- NULL
+ROAD_CELLS_CSV <- "../data/antennas/Hoces-del-Cabriel/road-antennas.csv"
+MEC_LOCATIONS_CSV <- paste("../data/mec-pops/Hoces-del-Cabriel/",
+                           "mec-locations-i-iii/MEC-locations.csv", sep = "")
+CLI <- FALSE # flag to tell if file is executed from CLI
+METHOD <- "basicm1m2"
+RADIO_TECH <- "FDD30kHz2sSPS"
+INT_MAT_M1 <- NULL
+INT_MAT_M2 <- NULL
+OPERATOR <- 7
+###############################################
+
+
 
 # Parse arguments if existing to change default global variables
 args <- commandArgs(trailingOnly=TRUE)

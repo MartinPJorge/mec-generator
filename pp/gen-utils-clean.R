@@ -2142,6 +2142,73 @@ mecLocationAntenna <- function(mecIntMatrix, lonAxis, latAxis, maxDiss,
 }
 
 
+#' @description Obtains the maximum value coordinates in a matrix. In case there
+#' are multiple maximums, it obtains the one minimizing its sum of distances to
+#' other maximums.
+#' @param mat matrix
+#' @return c(row, col) where the middle maximum is located
+getMidMax <- function(mat) {
+  maxM <- max(mat)
+  
+  minDis <- Inf
+  minRow <- 0
+  minCol <- 0
+  
+  matCoord <- which(maxM == mat, arr.ind = TRUE)
+  
+  for (row in 1:nrow(matCoord)) {
+    coor <- matCoord[row,]
+    currDis <- 0
+    
+    # Add distance to other coordinates
+    for (row2 in 1:nrow(matCoord)) {
+      if (row != row2) {
+        currDis <- currDis + abs(coor[1] - matCoord[row2, 1]) +
+          abs(coor[2] - matCoord[row2, 2])
+      }
+    }
+    
+    # Check if distance to others is minimum
+    if (currDis < minDis) {
+      minDis <- currDis
+      minRow <- coor[1]
+      minCol <- coor[2]
+    }
+  }
+  
+  return(c(minRow, minCol))
+}
+
+
+#' @description Obtains the array indexes nearest to (lon,lat)
+#' @param lonAxis vector with the longitude coordinates of the matrix
+#' @param latAxis vector with the latitude coordinates of the matrix
+#' @param lon longitude coordinate
+#' @param latitude latitude coordinate
+#' @return c(lonAxisIndex, latAxisIndex)
+findMatAssocIdx <- function(lonAxis, latAxis, lon, lat) {
+  lo <- 2
+  la <- 2
+  loFound <- FALSE
+  laFound <- FALSE
+  
+  while(!loFound & lo <= length(lonAxis)) {
+    if (lonAxis[lo - 1] <= lon & lon <= lonAxis[lo]) {
+      loFound <- TRUE
+    }
+    lo <- lo + 1
+  }
+  
+  while(!laFound & la <= length(latAxis)) {
+    if (latAxis[la - 1] <= lat & lat <= latAxis[la]) {
+      latFound <- TRUE
+    }
+    la <- la + 1
+  }
+  
+  return(c(lo, la))
+}
+
 
 #' @description It determines the location of MEC PoPs based on the intensity
 #' matrix decrease arround covered antennas.
@@ -2218,19 +2285,25 @@ mecLocationAntennaM1M2 <- function(mecIntMatrixs, lonAxis, latAxis, maxDisss,
     }
     maxAntRad <- max(unlist(maxDiss))
     maxMecInts <- max(mecIntMatrix)
-    mecCoord <- which(maxMecInts == mecIntMatrix, arr.ind = TRUE)
-    mecCoord_ <- which(maxMecInts == mecIntMatrix, arr.ind = TRUE)
-    mecCoord <- c(lonAxis[mecCoord[1,1]], latAxis[mecCoord[1,2]])
+    # Get maxCoordinates to be in the center of a "meseta"
+    mecCoord <- getMidMax(mecIntMatrix)
+    mecCoord_ <- mecCoord
+    mecCoord <- c(lonAxis[mecCoord[1]], latAxis[mecCoord[2]])
+    #################################
     mecLons <- c(mecLons, mecCoord[1])
     mecLats <- c(mecLats, mecCoord[2])
     mecCoveredAs <- c(mecCoveredAs, 0)
     mecInts <- c(mecInts, maxMecInts)
     cat(sprintf("MEC number: %d\n", length(mecLons)))
     cat(sprintf("  maxM1=%d, maxM2=%d\n", maxM1, maxM2))
+    cat(sprintf("  #maxM1=%d, #maxM2=%d\n",
+                sum(mecIntMatrixs$m1[mecIntMatrixs$m1 == maxM1]),
+                    sum(mecIntMatrixs$m2[mecIntMatrixs$m2 == maxM2])))
     cat(sprintf("  network ring: %s\n", mecRing[length(mecRing)]))
     cat(sprintf("  uncovered antennas: %d\n", sum(!antCovered)))
     cat(sprintf("  location: (%f,%f)\n", mecCoord[1], mecCoord[2]))
-    cat(sprintf("  location indexes: (%d,%d)\n", mecCoord_[1], mecCoord_[2]))
+    cat(sprintf("  location indexes: (%d,%d)\n", mecCoord_[1],
+                mecCoord_[2]))
     
     # Get the max2Cover antennas closest to the MEC PoP
     reachAntInd <- reachableAntennas(antLons = antLons, antLats = antLats,

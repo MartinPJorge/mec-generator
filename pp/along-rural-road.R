@@ -22,7 +22,6 @@ RURAL_ANTENNAS_DIS <- 1000 # 1 antenna per square km
 isScript <- FALSE
 OUT_CSV_PATH <- NULL
 args <- commandArgs(trailingOnly=TRUE)
-print(length(args))
 if(length(args) > 0)
   if(length(args) != 1) {
     stop(cat("Arguments to receive are: ",
@@ -68,7 +67,9 @@ currLon <- destination(lat = antennasOrderLons[1,]$lat,
                                  lon = currLon, bearing = 90,
                                  distance = RURAL_ANTENNAS_DIS / 2)$lon2
 positionedLons <- c(currLon)
-while (currLon < region$br$lon) {
+while (currLon < (region$br$lon - 0.01)) { # The 0.01 is obtained by observation
+                                         # and prevents generation of location
+                                         # longitude outside
   currLon <- destination(lat = antennasOrderLons[1,]$lat,
                                    lon = currLon, bearing = 90,
                                    distance = RURAL_ANTENNAS_DIS)$lon2
