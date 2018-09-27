@@ -89,7 +89,7 @@ rePopMat <- rescaleRange(matrix = rePopMat, toA = 1, toB = 1.07)
 
 # Aleatorize with small scale to prevent equal marks
 minRan <- min(rePopMat) / 1000000
-randMat <- replicate(nrow(rePopMat), runif(ncol(rePopMat), min = minRan,
+randMat <- replicate(ncol(rePopMat), runif(nrow(rePopMat), min = minRan,
                                            max = 2 * minRan))
 rePopMat <- rePopMat + randMat
 

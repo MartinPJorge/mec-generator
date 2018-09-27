@@ -79,6 +79,8 @@ while (currLon < (region$br$lon - 0.01)) { # The 0.01 is obtained by observation
 # Obtain the latitudes of the generated road antennas' longitudes
 roadAntennas <- roadLatitudes(pointsLongitudes = positionedLons,
                                 milestones = region$A3Markpoints)
+print(roadAntennas)
+
 
 # Append the generated road antennas to the existing ones
 roadAntennasW <- owin(xrange = c(region$bl$lon - 1, region$tr$lon + 1),

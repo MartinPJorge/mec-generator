@@ -2294,6 +2294,15 @@ mecLocationAntennaM1M2 <- function(mecIntMatrixs, lonAxis, latAxis, maxDisss,
     mecLats <- c(mecLats, mecCoord[2])
     mecCoveredAs <- c(mecCoveredAs, 0)
     mecInts <- c(mecInts, maxMecInts)
+    
+    if (sum(!antCovered) == 10) {
+      ais_no <- which(antCovered == FALSE)
+      cat(sprintf("These are the uncovered antennas:\n"))
+      for (ai_no in ais_no) {
+        cat(sprintf("  (%f,%f)\n", antLons[ai_no], antLats[ai_no]))
+      }
+    }
+    
     cat(sprintf("MEC number: %d\n", length(mecLons)))
     cat(sprintf("  maxM1=%d, maxM2=%d\n", maxM1, maxM2))
     cat(sprintf("  #maxM1=%d, #maxM2=%d\n",
@@ -2734,5 +2743,45 @@ downAntInt <- function(intMat, lonAxis, latAxis, antLons, antLats, antRadios,
   
   return(intMatD)
 }
+
+
+#' @description It obtains a subset of an intensity matrix
+#' @param intMat intensity matrix to be chopped
+#' @param lonAxis vector with the longitude coordinates of the matrix
+#' @param latAxis vector with the latitude coordinates of the matrix
+#' @param lonL left longitude of the region
+#' @param lonR right longitude of the region
+#' @param latB bottom latitude of the region
+#' @param latT top latitude of the region
+#' @return list(mat, lonAxis, latAxis)
+chopIntMat <- function(intMat, lonAxis, latAxis, lonL, lonR, latB, latT) {
+  
+  lonAxL <- 1
+  while (lonAxis[lonAxL] < lonL & lonAxL < length(lonAxis)) {
+    lonAxL <- lonAxL + 1
+  }
+  lonAxR <- 1
+  while (lonAxis[lonAxR] < lonR & lonAxR < length(lonAxis)) {
+    lonAxR <- lonAxR + 1
+  }
+  lonAxR <- lonAxR - 1
+  
+  latAxB <- 1
+  while (latAxis[latAxB] < latB & latAxB < length(latAxis)) {
+    latAxB <- latAxB + 1
+  }
+  latAxT <- 1
+  while (latAxis[latAxT] < latT & latAxT < length(latAxis)) {
+    latAxT <- latAxT + 1
+  }
+  latAxT <- latAxT - 1
+  
+  cat(sprintf("[%d:%d, %d:%d]\n", lonAxL, lonAxR, latAxB, latAxT))
+  
+  return(list(mat = intMat[lonAxL:lonAxR, latAxB:latAxT],
+              lonAxis = lonAxis[lonAxL:lonAxR],
+              latAxis = latAxis[latAxB:latAxT]))
+}
+
 
 

@@ -53,14 +53,13 @@ REGIONS <- "../data/regions.json"
 REGION_NAME <- "Hoces-del-Cabriel"
 MEC_GEN_PARAMS <- "../data/mec-gen-params.json"
 LAT_SAMPLES <- 100
-LON_SAMPLES <- 100
+LON_SAMPLES <- 300
 NUM_MECs <- NULL
-MACRO_CELLS_CSV <- paste("../data/antennas/Hoces-del-Cabriel/",
-  "antennas-1AAU/Hoces-del-Cabriel-1AAU-1.csv", sep = "")
+MACRO_CELLS_CSV <- NULL
 FEMTO_CELLS_CSV <- NULL
 ROAD_CELLS_CSV <- "../data/antennas/Hoces-del-Cabriel/road-antennas.csv"
 MEC_LOCATIONS_CSV <- paste("../data/mec-pops/Hoces-del-Cabriel/",
-                           "mec-locations-i-iii/MEC-locations.csv", sep = "")
+                           "mec-locations-i-iii-road/MEC-locations.csv", sep = "")
 CLI <- FALSE # flag to tell if file is executed from CLI
 METHOD <- "basicm1m2"
 RADIO_TECH <- "FDD30kHz2sSPS"
@@ -79,7 +78,7 @@ if(length(args) > 0)
       "regionID #latSamples #lonSamples mecParamsJSON numMECs|<0",
       "radioTech[FDD30kHz2sSPS, TDD120kHz7sSPS, FDD120kHz7sSPS]",
       "method[basicm1, basicm2, dig-outm1, dig-outm2, basicm1m2, dig-outm1m2]",
-      "macro-cells.csv femto-cells.csv|NULL road-cells.csv|NULL",
+      "macro-cells.csv|NULL femto-cells.csv|NULL road-cells.csv|NULL",
       "MEClocations.csv intMatM1.csv|NULL intMatM2.csv|NULL"))
   } else {
     CLI <- TRUE
@@ -94,6 +93,9 @@ if(length(args) > 0)
     RADIO_TECH <- args[6]
     METHOD <- args[7]
     MACRO_CELLS_CSV <- args[8]
+    if (MACRO_CELLS_CSV == "NULL") {
+      MACRO_CELLS_CSV = NULL
+    }
     FEMTO_CELLS_CSV <- args[9]
     if (FEMTO_CELLS_CSV == "NULL") {
       FEMTO_CELLS_CSV = NULL
@@ -139,7 +141,10 @@ roadCells <- NULL
 if (!is.null(ROAD_CELLS_CSV)) {
   roadCells <- read.csv(file = ROAD_CELLS_CSV)
 }
-macroCells <- read.csv(file = MACRO_CELLS_CSV)
+macroCells <- NULL
+if (!is.null(MACRO_CELLS_CSV)) {
+  macroCells <- read.csv(file = MACRO_CELLS_CSV)
+}
 lons <- c()
 lats <- c()
 radio <- c()
@@ -164,12 +169,14 @@ if (!is.null(ROAD_CELLS_CSV)) {
     net <- c(net, 7)
   }
 }
-for (row in 1:nrow(macroCells)) {
-  macroCell <- macroCells[row,]
-  lons <- c(lons, macroCell$lon)
-  lats <- c(lats, macroCell$lat)
-  radio <- c(radio, as.character(macroCell$radio))
-  net <- c(net, OPERATOR)
+if (!is.null(MACRO_CELLS_CSV)) {
+  for (row in 1:nrow(macroCells)) {
+    macroCell <- macroCells[row,]
+    lons <- c(lons, macroCell$lon)
+    lats <- c(lats, macroCell$lat)
+    radio <- c(radio, as.character(macroCell$radio))
+    net <- c(net, OPERATOR)
+  }
 }
 all5gAntennas <- data.frame(radio = radio, net = net, lon = lons, lat = lats)
 
