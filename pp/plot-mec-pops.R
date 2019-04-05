@@ -99,7 +99,7 @@ regions <- fromJSON(file = REGIONS)
 lonAxis <- scan(file = PEOPLE_LONS)
 latAxis <- scan(file = PEOPLE_LATS)
 mecLocs <- read.csv(file = MEC_LOCATIONS_CSV)
-mecLocs$circleSize <- ceil(10 * mecLocs$coveredAs / max(mecLocs$coveredAs))
+mecLocs$circleSize <- 1 + ceil(10 * mecLocs$coveredAs / max(mecLocs$coveredAs))
 shapes <- c()
 for (row in 1:nrow(mecLocs)) {
   shapes <- c(shapes, ifelse(mecLocs[row,]$ring == "M2", 15, 18))
@@ -231,27 +231,32 @@ if (!is.null(MEC_M1_DIR)) {
              g = rep(seq_along(p[[1]]), lengths(p[[1]]))) 
   
   gd <- as.data.frame(m)
-  mynamestheme <- theme(plot.title = element_text(family = "Helvetica", face = "bold", size = (15)))
+  mynamestheme <- theme(plot.title = element_text(family = "Helvetica",
+                                                  face = "bold", size = (28)),
+                        axis.title = element_text(size = 18),
+                        axis.text.x = element_text(size = 18),
+                        axis.text.y = element_text(size = 18),
+                        legend.text = element_text(size = 20),
+                        legend.title = element_text(size = 28)
+                        )
   
   
   # Plot
   gg_m <- ggmap(map)
   gg_m <- gg_m + geom_polygon(data=gd, aes(x, y, group = g, fill = upper, alpha = upper)) +
     scale_fill_gradient(low = "gray", high = "black") +
-    scale_alpha(range = c(0.3, 0.6)) +
+    scale_alpha(range = c(0, 0.4)) +
     geom_point(data=mecLocs, aes(x=lon, y=lat, shape=shapes,
                                      size=circleSize)) +
-    mynamestheme +
-    labs(size = TeX("$\\frac{10·C_A(mp)}{max_{mp \\in PoPs} C_A(mp)}$")) +
-    labs(alpha = TeX("C_{A,M1}(mp)"), x = "longitude", y = "latitude") +
-    guides(fill = FALSE) +
     scale_shape_manual(name = "Network ring",
                        labels = c("M1", "M2"),
                        values = c(18, 15)) +
-    ggtitle(label = "MEC PoPs", subtitle = sprintf("antennas' radio: %s", radioTech)) +
-    theme(plot.title = element_text(hjust = 0.5),
-          plot.subtitle = element_text(hjust = 0.5))
-  gg_m
+    labs(size = TeX("$\\frac{10·C_A(mp)}{max_{mp \\in PoPs} C_A(mp)}$")) +
+    labs(alpha = TeX("C_{A,M1}"), x = "LONGITUDE", y = "LATITUDE") +
+    guides(fill = FALSE, size = FALSE) +
+    mynamestheme
+    #ggtitle(label = "MEC PoPs", subtitle = sprintf("antennas' radio: %s", radioTech)) +
+    gg_m
   
   if (CLI) {
     ggsave(filename = OUT_PLOT_M1, plot = gg_m)
@@ -269,27 +274,35 @@ if (!is.null(MEC_M2_DIR)) {
              g = rep(seq_along(p[[1]]), lengths(p[[1]]))) 
   
   gd <- as.data.frame(m)
-  mynamestheme <- theme(plot.title = element_text(family = "Helvetica", face = "bold", size = (15)))
+  mynamestheme <- theme(plot.title = element_text(family = "Helvetica",
+                                                  face = "bold", size = (28)),
+                        axis.title = element_text(size = 18),
+                        axis.text.x = element_text(size = 18),
+                        axis.text.y = element_text(size = 18),
+                        legend.text = element_text(size = 20),
+                        legend.title = element_text(size = 28)
+                        )
+  
   
   # Plot
   gg_m <- ggmap(map)
   gg_m <- gg_m + geom_polygon(data=gd, aes(x, y, group = g, fill = upper, alpha = upper)) +
-    scale_fill_gradient(low = "grey45", high = "black") +
+    scale_fill_gradient(low = "gray", high = "black") +
     scale_alpha(range = c(0.3, 0.6)) +
     geom_point(data=mecLocs, aes(x=lon, y=lat, shape=shapes,
                                      size=circleSize)) +
-    mynamestheme +
     labs(size = TeX("$\\frac{10·C_A(mp)}{max_{mp \\in PoPs} C_A(mp)}$")) +
-    labs(alpha = TeX("C_{A,M2}(mp)"), x = "longitude", y = "latitude") +
-    guides(fill = FALSE) +
+    labs(alpha = TeX("C_{A,M2}"), x = "LONGITUDE", y = "LATITUDE") +
+    guides(fill = FALSE, size = FALSE) +
     scale_shape_manual(name = "Network ring",
                        labels = c("M2", "M1"),
                        values = c(15, 18)) +
-    ggtitle("MEC PoPs", subtitle = sprintf("antennas' radio: %s", radioTech)) +
-    ggtitle(label = "MEC PoPs", subtitle = sprintf("antennas' radio: %s", radioTech)) +
-    theme(plot.title = element_text(hjust = 0.5),
-          plot.subtitle = element_text(hjust = 0.5))
-  gg_m
+    mynamestheme
+    #ggtitle(label = "MEC PoPs", subtitle = sprintf("antennas' radio: %s", radioTech)) +
+    gg_m
+  
+    #ggtitle("MEC PoPs", subtitle = sprintf("antennas' radio: %s", radioTech)) +
+    #ggtitle(label = "MEC PoPs", subtitle = sprintf("antennas' radio: %s", radioTech)) +
   
   if (CLI) {
     ggsave(filename = OUT_PLOT_M2, plot = gg_m)
