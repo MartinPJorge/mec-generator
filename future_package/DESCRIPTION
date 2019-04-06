@@ -1,0 +1,6 @@
+LazyData: true
+Imports:
+    pracma,
+    SDMTools,
+    spatstat,
+    rjson

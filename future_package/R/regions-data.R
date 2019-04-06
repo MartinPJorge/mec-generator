@@ -1,0 +1,29 @@
+#' Regions data for the 5G infrastructure generation
+#'
+#' Data from different regions in Spain with their associated populations,
+#' census, coordinaates, and areas.
+#'
+#' @docType data
+#'
+#' @usage data(regions)
+#'
+#' @format An object of class \code{"list"};  TODO - specify better the format
+#'
+#' @keywords datasets
+#'
+#' @source \href{https://phenome.jax.org/projects/Moore1b}{QTL Archive}
+#' @source \href{http://www-2.munimadrid.es/TSE6/control/seleccionDatosBarrio}{Padrón Municipal de Habitantes, “Población por distrito y barrio”, 2018, [Accessed: 2018-10-17]}
+#' @source \href{https://www.rmercantilmadrid.com/RMM/Home/Index.aspx}{Registro Mercantil y de Bienes Muebles de la Provincia de Madrid, "Registro Mercantil de Madrid", 2018, [Accessed: 2018-08-27]}
+#' @source \href{http://www.sedecatastro.gob.es/}{Ministerio de Hacienda, "Sede Electrónica del Catastro"”, 2018, [Accessed: 2018-09-21].}
+#'
+#' @examples
+#' data(regions)
+#' regions$regions[[1]]$id
+#' # [1] "Madrid-center"
+#' regions$regions[[1]]$populations[[1]]$id
+#' # [1] "Centro"
+#' regions$regions[[1]]$populations[[1]]$population
+#' # [1] 132284
+#' regions$regions[[1]]$populations[[1]]$center
+#' # [1] "40.416825,-3.706003" 
+"regions"
