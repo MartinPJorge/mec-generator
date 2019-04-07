@@ -6,4 +6,5 @@ Imports:
     rjson,
     cluster,
     fields,
-    geosphere
+    geosphere,
+    igraph
