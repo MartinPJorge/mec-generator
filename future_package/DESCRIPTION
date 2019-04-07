@@ -3,4 +3,7 @@ Imports:
     pracma,
     SDMTools,
     spatstat,
-    rjson
+    rjson,
+    cluster,
+    fields,
+    geosphere

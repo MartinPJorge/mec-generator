@@ -666,7 +666,7 @@ intensityFactors <- function(squareSide = 1, squareCells = 12,
                     latB = regionSquares$latB,
                     latT = regionSquares$latT,
                     smaller = regionSquares$smaller,
-                    avgCells = regionSquares$avgAAUs,
+                    avgCells = regionSquares$avgCells,
                     factor = squareFacts$squareFactors,
                     sideSquares = squareFacts$squareSideSqs,
                     avgCells = squareFacts$squareAvgs))
