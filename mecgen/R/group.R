@@ -374,23 +374,24 @@ write5GtoGraph <- function(m1Assoc, m1Coords, m1AccAssocs, accCentCoords,
       distances <- c(distances, dis)
       distanceUnits <- c(distanceUnits, "meters")
     }
-  }
 
-  # Connect last M3 to first replica M3
-  lastM3 <- tail(m3Switches, n = 1)
-  firstM3 <- head(m3Switches, n = 1)
-  dis <- SDMTools::distance(lat1 = lastM3$lat, lon1 = lastM3$lon,
-                            lat2 = firstM3$lat, lon2 = firstM3$lon)$distance
-  origins <- c(origins, paste("m3_", lastM3$group, sep = ""))
-  ends <- c(ends, paste("m3_rep_", firstM3$group, sep = ""))
-  bandwidths <- c(bandwidths, 36)
-  bandwidthUnits <- c(bandwidthUnits, "Tb/s")
-  distances <- c(distances, dis)
-  distanceUnits <- c(distanceUnits, "meters")
+    # Connect last M3 to first replica M3
+    lastM3 <- tail(m3Switches, n = 1)
+    firstM3 <- head(m3Switches, n = 1)
+    dis <- SDMTools::distance(lat1 = lastM3$lat, lon1 = lastM3$lon,
+                              lat2 = firstM3$lat, lon2 = firstM3$lon)$distance
+    origins <- c(origins, paste("m3_", lastM3$group, sep = ""))
+    ends <- c(ends, paste("m3_rep_", firstM3$group, sep = ""))
+    bandwidths <- c(bandwidths, 36)
+    bandwidthUnits <- c(bandwidthUnits, "Tb/s")
+    distances <- c(distances, dis)
+    distanceUnits <- c(distanceUnits, "meters")
+  }
 
   links <- data.frame(from = origins, to = ends, bandwidth = bandwidths,
                       bandwidthUnits = bandwidthUnits, distance = distances,
                       distanceUnits = distanceUnits)
+  View(links)
 
   # Build and write the graph
   g = igraph::graph_from_data_frame(links, vertices = nodes, directed = FALSE)
