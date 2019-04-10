@@ -458,23 +458,59 @@ build5GScenario <- function(lats, lons) {
 
 
 
-######### TEST
-# coboCells <- mecgen::cobo
-# assocs <- build5GScenario(lats = coboCells$lat, lons = coboCells$lon)
-#
-# m1Assoc <- assocs[[1]]
-# m1Coords <- assocs[[2]]
-# m1AccAssocs <- assocs[[3]]
-# accCentCoords <- assocs[[4]]
-# m2Assocs <- assocs[[5]]
-# m2Switches <- assocs[[6]]
-# m2AggAssocs <- assocs[[7]]
-# aggCentCoords <- assocs[[8]]
-# m3Assocs <- assocs[[9]]
-# m3Switches <- assocs[[10]]
-#
-#
-# frames <- graphFrames(m1Assoc, m1Coords, m1AccAssocs, accCentCoords,
-#                            m2Assocs, m2Switches, m2AggAssocs, aggCentCoords,
-#                            m3Assocs, m3Switches)
-
+####### TEST
+### coboCells <- mecgen::cobo
+### assocs <- build5GScenario(lats = coboCells$lat, lons = coboCells$lon)
+###
+### m1Assoc <- assocs[[1]]
+### m1Coords <- assocs[[2]]
+### m1AccAssocs <- assocs[[3]]
+### accCentCoords <- assocs[[4]]
+### m2Assocs <- assocs[[5]]
+### m2Switches <- assocs[[6]]
+### m2AggAssocs <- assocs[[7]]
+### aggCentCoords <- assocs[[8]]
+### m3Assocs <- assocs[[9]]
+### m3Switches <- assocs[[10]]
+### coboLonL <- -3.775409
+### coboLonR <- -3.737324
+### coboLatB <- 40.253541
+### coboLatT <- 40.276686
+###
+###
+### frames <- graphFrames(m1Assoc, m1Coords, m1AccAssocs, accCentCoords,
+###                            m2Assocs, m2Switches, m2AggAssocs, aggCentCoords,
+###                            m3Assocs, m3Switches)
+###
+###
+### attachFrames <- attachServers(nodes = frames$nodes, links = frames$links,
+###                               numServers = 3,
+###                               bandwidth = 12,
+###                               bandwidthUnits = "Mbps",
+###                               distance = 0,
+###                               distanceUnits = "meter",
+###                               switchType = "m2",
+###                               properties = list(cpu=2), idPrefix = "dell")
+###
+### attachFrames <- attachFogNodes(nodes = attachFrames$nodes,
+###                                links = attachFrames$links,
+###                                latB = coboLatB, latT = coboLatT,
+###                                lonL = coboLonL, lonR = coboLonR,
+###                                numNodes = 10,
+###                                properties = list(mem=20), bandwidth = 20,
+###                                bandwidthUnits = "Mpbs",
+###                                idPrefix = "test")
+###
+### attachFrames <- attachEndpoints(nodes = attachFrames$nodes,
+###                                 links = attachFrames$links, latB = coboLatB,
+###                                 latT = coboLatT, lonL = coboLonL,
+###                                 lonR = coboLonR, numEndpoints = 10,
+###                                 bandwidth = 10,
+###                                 bandwidthUnits = "Mbps",
+###                                 idPrefix = "person")
+###
+### links <- attachFrames$links
+### nodes <- attachFrames$nodes
+###
+### g = igraph::graph_from_data_frame(links, vertices = nodes, directed = FALSE)
+### igraph::write_graph(graph = g, file = "/tmp/5g-mec.gml", format = "gml")

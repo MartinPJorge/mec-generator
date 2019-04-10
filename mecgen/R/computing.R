@@ -157,7 +157,7 @@ attachFogNodes <- function(nodes, links, latB, latT, lonL, lonR, numNodes,
       }
     }
 
-    assignedCell <- c(assignedCell, cells[assigned,]$id)
+    assignedCell <- c(assignedCell, as.vector(cells[assigned,]$id))
     distances <- c(distances, minDis)
   }
 
@@ -237,7 +237,7 @@ attachEndpoints <- function(nodes, links, latB, latT, lonL, lonR, numEndpoints,
     }
 
     distances <- c(distances, minDis)
-    assignedCells <- c(assignedCells, cells[assigned,]$id)
+    assignedCells <- c(assignedCells, as.vector(cells[assigned,]$id))
   }
 
   # Create the nodes data.frame
