@@ -120,7 +120,7 @@ linkAccessRings <- function(m1Assoc, m1Coords, m1AccAssocs, accCentCoords,
         m1Dst <- ringM1s[m1Row,]
         origins <- c(origins, paste("m1_", m1Src$group, sep = ""))
         ends <- c(ends, paste("m1_", m1Dst$group, sep = ""))
-        bandwidths <- c(bandwidths, 300)
+        bandwidths <- c(bandwidths, "300")
         bandwidthUnits <- c(bandwidthUnits, "Gb/s")
         dis <- SDMTools::distance(lat1 = m1Src$lat, lon1 = m1Src$lon,
                                   lat2 = m1Dst$lat, lon2 = m1Dst$lon)$distance
@@ -133,7 +133,7 @@ linkAccessRings <- function(m1Assoc, m1Coords, m1AccAssocs, accCentCoords,
     lastM1 <- tail(ringM1s, n = 1)
     origins <- c(origins, paste("m1_", lastM1$group, sep = ""))
     ends <- c(ends, paste("m2_", m2$group, sep = ""))
-    bandwidths <- c(bandwidths, 300)
+    bandwidths <- c(bandwidths, "300")
     bandwidthUnits <- c(bandwidthUnits, "Gb/s")
     dis <- SDMTools::distance(lat1 = lastM1$lat, lon1 = lastM1$lon,
                               lat2 = m2$lat, lon2 = m2$lon)$distance
@@ -477,4 +477,3 @@ build5GScenario <- function(lats, lons) {
 # frames <- graphFrames(m1Assoc, m1Coords, m1AccAssocs, accCentCoords,
 #                            m2Assocs, m2Switches, m2AggAssocs, aggCentCoords,
 #                            m3Assocs, m3Switches)
-

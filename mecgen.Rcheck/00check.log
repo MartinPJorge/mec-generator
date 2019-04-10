@@ -1,0 +1,161 @@
+* using log directory ‘/home/jorge/Documentos/mec-generator/mecgen.Rcheck’
+* using R version 3.5.3 (2019-03-11)
+* using platform: x86_64-redhat-linux-gnu (64-bit)
+* using session charset: UTF-8
+* using options ‘--no-manual --as-cran’
+* checking for file ‘mecgen/DESCRIPTION’ ... OK
+* this is package ‘mecgen’ version ‘0.0.0.9000’
+* package encoding: UTF-8
+* checking package namespace information ... OK
+* checking package dependencies ... OK
+* checking if this is a source package ... OK
+* checking if there is a namespace ... OK
+* checking for executable files ... OK
+* checking for hidden files and directories ... OK
+* checking for portable file names ... OK
+* checking for sufficient/correct file permissions ... OK
+* checking serialization versions ... OK
+* checking whether package ‘mecgen’ can be installed ... OK
+* checking installed package size ... OK
+* checking package directory ... OK
+* checking DESCRIPTION meta-information ... WARNING
+Non-standard license specification:
+  What license it uses
+Standardizable: FALSE
+* checking top-level files ... OK
+* checking for left-over files ... OK
+* checking index information ... OK
+* checking package subdirectories ... OK
+* checking R files for non-ASCII characters ... OK
+* checking R files for syntax errors ... OK
+* checking whether the package can be loaded ... OK
+* checking whether the package can be loaded with stated dependencies ... OK
+* checking whether the package can be unloaded cleanly ... OK
+* checking whether the namespace can be loaded with stated dependencies ... OK
+* checking whether the namespace can be unloaded cleanly ... OK
+* checking loading without being on the library search path ... OK
+* checking dependencies in R code ... OK
+* checking S3 generic/method consistency ... OK
+* checking replacement functions ... OK
+* checking foreign function calls ... OK
+* checking R code for possible problems ... NOTE
+attachServers: no visible binding for global variable ‘id’
+baseIntensity: no visible global function definition for ‘fromJSON’
+createMatrix: no visible global function definition for ‘runif’
+findSquare: no visible global function definition for ‘destination’
+genCells: no visible global function definition for ‘owin’
+genEndpoints: no visible global function definition for ‘runif’
+genFogNodes: no visible global function definition for ‘runif’
+genInterpInt : interpolator: no visible global function definition for
+  ‘interp2’
+getSquareFactors: no visible global function definition for ‘ceil’
+getSquareFactors: no visible global function definition for ‘owin’
+graphFrames: no visible binding for global variable ‘bandwidth’
+graphFrames: no visible global function definition for ‘tail’
+graphFrames: no visible global function definition for ‘head’
+groupElems: no visible global function definition for ‘hclust’
+groupElems: no visible global function definition for ‘as.dist’
+groupElems: no visible global function definition for ‘cutree’
+groupElems: no visible global function definition for ‘head’
+groupElems: no visible global function definition for ‘tail’
+intensityFactors: no visible global function definition for ‘ceil’
+jorgeMaternIImapI: no visible global function definition for ‘rpoispp’
+jorgeMaternIImapI: no visible global function definition for ‘rlabel’
+linkAccessRings: no visible global function definition for ‘tail’
+linkAccessRings: no visible global function definition for ‘head’
+linkAggRings: no visible global function definition for ‘tail’
+linkAggRings: no visible global function definition for ‘head’
+matternIImapIintMapprox3 : integrand4: no visible global function
+  definition for ‘integral2’
+matternIImapIintMapprox3: no visible global function definition for
+  ‘integral2’
+outerRect: no visible global function definition for ‘destination’
+townIntM: no visible global function definition for ‘integral2’
+Undefined global functions or variables:
+  as.dist bandwidth ceil cutree destination fromJSON hclust head id
+  integral2 interp2 owin rlabel rpoispp runif tail
+Consider adding
+  importFrom("stats", "as.dist", "cutree", "hclust", "runif")
+  importFrom("utils", "head", "tail")
+to your NAMESPACE file.
+* checking Rd files ... OK
+* checking Rd metadata ... OK
+* checking Rd line widths ... OK
+* checking Rd cross-references ... OK
+* checking for missing documentation entries ... OK
+* checking for code/documentation mismatches ... OK
+* checking Rd \usage sections ... WARNING
+Undocumented arguments in documentation object 'attachServers'
+  ‘links’
+Documented arguments not in \usage in documentation object 'attachServers':
+  ‘link’
+
+Functions with \usage entries need to have the appropriate \alias
+entries, and all their arguments documented.
+The \usage entries must correspond to syntactically valid R code.
+See chapter ‘Writing R documentation files’ in the ‘Writing R
+Extensions’ manual.
+* checking Rd contents ... OK
+* checking for unstated dependencies in examples ... OK
+* checking contents of ‘data’ directory ... WARNING
+Files not of a type allowed in a ‘data’ directory:
+  ‘regions.json’
+Please use e.g. ‘inst/extdata’ for non-R data files
+* checking data for non-ASCII characters ... OK
+* checking data for ASCII and uncompressed saves ... OK
+* checking examples ... ERROR
+Running examples in ‘mecgen-Ex.R’ failed
+The error most likely occurred in:
+
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: cobo
+> ### Title: Generated antennas data for Cobo Calleja
+> ### Aliases: cobo
+> ### Keywords: datasets
+> 
+> ### ** Examples
+> 
+> data(cobo)
+> assocs <- build5GScenario(lats = cobo$lat, lons = cobo$lon)
+> 
+> m1Assoc <- assocs[[1]]
+> m1Coords <- assocs[[2]]   
+> m1AccAssocs <- assocs[[3]]   
+> accCentCoords <- assocs[[4]]   
+> m2Assocs <- assocs[[5]]   
+> m2Switches <- assocs[[6]]   
+> m2AggAssocs <- assocs[[7]]   
+> aggCentCoords <- assocs[[8]]   
+> m3Assocs <- assocs[[9]]   
+> m3Switches <- assocs[[10]]  
+> 
+> 
+> write5GtoGraph(m1Assoc, m1Coords, m1AccAssocs, accCentCoords,
++                            m2Assocs, m2Switches, m2AggAssocs, aggCentCoords,
++                            m3Assocs, m3Switches, format = "gml",
++                file = "/tmp/5g-mec.gml")
+Error in write5GtoGraph(m1Assoc, m1Coords, m1AccAssocs, accCentCoords,  : 
+  could not find function "write5GtoGraph"
+Execution halted
+* checking for unstated dependencies in ‘tests’ ... OK
+* checking tests ... ERROR
+  Running ‘testthat.R’
+Running the tests in ‘tests/testthat.R’ failed.
+Last 13 lines of output:
+         times = numServers), bandwidth = rep(x = bandwidth, 
+         times = numServers), bandwidthUnits = rep(x = bandwidthUnits, 
+         times = numServers), distance = rep(x = distance, 
+         times = numServers), distanceUnits = rep(x = distanceUnits, 
+         times = numServers), switchType = "m2", properties = properties, 
+         idPrefix = "dell_") at testthat/test_computing.R:17
+  2: data.frame(id = servIds, lon = servLons, lat = servLats, 
+         type = rep(x = "server", times = numServers))
+  
+  ══ testthat results  ════════════════════════
+  OK: 10 SKIPPED: 0 FAILED: 1
+  1. Error: Server assignments work (@test_computing.R#17) 
+  
+  Error: testthat unit tests failed
+  Execution halted
+* DONE
+Status: 2 ERRORs, 3 WARNINGs, 1 NOTE

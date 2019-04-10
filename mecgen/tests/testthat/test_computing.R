@@ -2,79 +2,143 @@ context("Computing assignments")
 library(mecgen)
 
 test_that("Server assignments work", {
-  switches <- data.frame(group = c(1,2,3))
-  delay <- 20
+  nodes <- mecgen::coboNodes
+  links <- mecgen::coboLinks
+
+  nodes[["strangeVal"]] <- rep(x = 23, times = nrow(nodes))
   bandwidth <- 1
-  properties <- list(cpu = 2, disk = 100, mem = 16)
+  bandwidthUnits <- "Gb/s"
+  distance <- 2
+  distanceUnits <- "meters"
+  properties <- list(cpu = 2, disk = 100, mem = 16, rare = 20)
   numServers <- 5
-  attachedServs <- attachServers(switches = switches, numServers = numServers,
-                              delay = delay, bandwidth = bandwidth,
-                              properties = properties)
+  switchType <- "m2"
+
+  attachFrames <- attachServers(nodes = nodes, links = links,
+                                numServers = numServers,
+                                bandwidth = bandwidth,
+                                bandwidthUnits = bandwidthUnits,
+                                distance = distance,
+                                distanceUnits = distanceUnits,
+                                switchType = switchType,
+                                properties = properties, idPrefix = "dell")
+  newNodes <- attachFrames$nodes
+  newLinks <- attachFrames$links
+  servNodes <- tail(newNodes, n = numServers)
+  servLinks <- tail(newLinks, n = numServers)
   serverIds <- c()
-  for (servNum in 0:(numServers - 1)) {
-    serverIds <- c(serverIds, paste("server_", servNum, sep = ""))
+  for (id in 0:(numServers - 1)) {
+    serverIds <- c(serverIds, paste("dell_server_", id, sep = ""))
   }
 
-  expect_equal(attachedServs$delay, rep(x = delay, times = numServers))
-  expect_equal(attachedServs$bandwidth, rep(x = bandwidth, times = numServers))
-  expect_equal(attachedServs$cpu, rep(x = properties$cpu, times = numServers))
-  expect_equal(attachedServs$disk, rep(x = properties$disk, times = numServers))
-  expect_equal(attachedServs$mem, rep(x = properties$mem, times = numServers))
-  expect_equal(as.vector(attachedServs$serverId), serverIds)
-  expect_equal(attachedServs$switchGroup, c(1,2,3,1,2))
+
+  expect_equal(as.vector(servLinks$bandwidth),
+               rep(x = bandwidth, times = numServers))
+  expect_equal(as.vector(servNodes$strangeVal),
+               rep(x = 0, times = numServers))
+  expect_equal(as.vector(servNodes$cpu),
+               rep(x = properties$cpu, times = numServers))
+  expect_equal(as.vector(servNodes$disk),
+               rep(x = properties$disk, times = numServers))
+  expect_equal(as.vector(servNodes$mem),
+               rep(x = properties$mem, times = numServers))
+  expect_equal(as.vector(servNodes$rare),
+               rep(x = properties$rare, times = numServers))
+  expect_equal(head(newNodes, n = nrow(newNodes) - numServers)$rare,
+               rep(x = 0, times = nrow(newNodes) - numServers))
+  expect_equal(as.vector(servNodes$type),
+               rep(x = "server", times = numServers))
+  expect_equal(as.vector(servNodes$id), serverIds)
 })
 
 
 test_that("Fog nodes generation works", {
-  data(cobo)
-  tenCells <- head(cobo, n = 10)
+  nodes <- mecgen::coboNodes
+  links <- mecgen::coboLinks
+
+  nodes[["strangeVal"]] <- rep(x = 23, times = nrow(nodes))
   coboLonL <- -3.775409
   coboLonR <- -3.737324
   coboLatB <- 40.253541
   coboLatT <- 40.276686
-  numNodes <- 20
-  properties <- list(cpu = 2, mem = 16, disk = 100)
+  bandwidth <- 1
+  bandwidthUnits <- "Gb/s"
+  properties <- list(cpu = 2, disk = 100, mem = 16, rare = 20)
+  numFogNodes <- 3
+
+  attachFrames <- attachFogNodes(nodes = nodes, links = links,
+                                 latB = coboLatB, latT = coboLatT,
+                                 lonL = coboLonL, lonR = coboLonR,
+                                 numNodes = numFogNodes,
+                                 properties = properties, bandwidth = bandwidth,
+                                 bandwidthUnits = bandwidthUnits,
+                                 idPrefix = "test")
+
+  newNodes <- attachFrames$nodes
+  newLinks <- attachFrames$links
+  fogNodes <- tail(newNodes, n = numFogNodes)
+  fogLinks <- tail(newLinks, n = numFogNodes)
   fogIds <- c()
-  for (fog in 1:numNodes) {
-    fogIds <- c(fogIds, paste("fogNode_", fog, sep = ""))
+  for (id in 1:numFogNodes) {
+    fogIds <- c(fogIds, paste("test_fogNode_", id, sep = ""))
   }
 
-  fogNodes <- genFogNodes(latB = coboLatB, latT = coboLatT, lonL = coboLonL,
-                          lonR = coboLonR, cells = tenCells,
-                          numNodes = numNodes, properties = properties)
 
-  expect_equal(as.vector(fogNodes$fogId), fogIds)
-  expect_equal(as.vector(fogNodes$cpu), rep(x = properties$cpu,
-                                            times = numNodes))
-  expect_equal(as.vector(fogNodes$mem), rep(x = properties$mem,
-                                            times = numNodes))
-  expect_equal(as.vector(fogNodes$disk), rep(x = properties$disk,
-                                             times = numNodes))
+  expect_equal(as.vector(fogLinks$bandwidth),
+               rep(x = bandwidth, times = numFogNodes))
+  expect_equal(as.vector(fogNodes$strangeVal),
+               rep(x = 0, times = numFogNodes))
+  expect_equal(as.vector(fogNodes$cpu),
+               rep(x = properties$cpu, times = numFogNodes))
+  expect_equal(as.vector(fogNodes$disk),
+               rep(x = properties$disk, times = numFogNodes))
+  expect_equal(as.vector(fogNodes$mem),
+               rep(x = properties$mem, times = numFogNodes))
+  expect_equal(as.vector(fogNodes$rare),
+               rep(x = properties$rare, times = numFogNodes))
+  expect_equal(head(newNodes, n = nrow(newNodes) - numFogNodes)$rare,
+               rep(x = 0, times = nrow(newNodes) - numFogNodes))
+  expect_equal(as.vector(fogNodes$type),
+               rep(x = "fogNode", times = numFogNodes))
+  expect_equal(as.vector(fogNodes$id), fogIds)
 })
 
 
 
 test_that("Endpoints generation works", {
-  data(cobo)
-  tenCells <- head(cobo, n = 10)
+  nodes <- mecgen::coboNodes
+  links <- mecgen::coboLinks
+
+  nodes[["strangeVal"]] <- rep(x = 23, times = nrow(nodes))
   coboLonL <- -3.775409
   coboLonR <- -3.737324
   coboLatB <- 40.253541
   coboLatT <- 40.276686
-  numEndpoints <- 20
-  bandwidth <- 100
+  bandwidth <- 1
+  bandwidthUnits <- "Gb/s"
+  numEndpoints <- 3
   endpointIds <- c()
   for (endpoint in 1:numEndpoints) {
-    endpointIds <- c(endpointIds, paste("endpoint_", endpoint, sep = ""))
+    endpointIds <- c(endpointIds, paste("person_endpoint_", endpoint, sep = ""))
   }
 
-  endpointNodes <- genEndpoints(latB = coboLatB, latT = coboLatT,
-                                    lonL = coboLonL, lonR = coboLonR,
-                                    cells = tenCells,
-                                    numEndpoints = numEndpoints,
-                                    bandwidth = bandwidth)
+  attachFrames <- attachEndpoints(nodes = nodes, links = links, latB = coboLatB,
+                                  latT = coboLatT, lonL = coboLonL,
+                                  lonR = coboLonR, numEndpoints = numEndpoints,
+                                  bandwidth = bandwidth,
+                                  bandwidthUnits = bandwidthUnits,
+                                  idPrefix = "person")
+  newNodes <- attachFrames$nodes
+  newLinks <- attachFrames$links
+  endpointNodes <- tail(newNodes, n = numEndpoints)
+  endpointLinks <- tail(newLinks, n = numEndpoints)
 
-  expect_equal(as.vector(endpointNodes$endpointId), endpointIds)
-  expect_equal(as.vector(endpointNodes$bandwidth), rep(x = bandwidth,
-                                                       times = numEndpoints))
+
+  expect_equal(as.vector(endpointLinks$bandwidth),
+               rep(x = bandwidth, times = numEndpoints))
+  expect_equal(as.vector(endpointNodes$strangeVal),
+               rep(x = 0, times = numEndpoints))
+  expect_equal(as.vector(endpointNodes$type),
+               rep(x = "endpoint", times = numEndpoints))
+  expect_equal(as.vector(endpointNodes$id), endpointIds)
 })

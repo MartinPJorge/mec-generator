@@ -8,3 +8,5 @@ data/people/*/lon*lat*.csv
 # Gridded data
 data/*/*/gridded*
 .Rproj.user
+
+*tar.gz

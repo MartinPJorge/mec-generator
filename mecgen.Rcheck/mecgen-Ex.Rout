@@ -1,0 +1,74 @@
+
+R version 3.5.3 (2019-03-11) -- "Great Truth"
+Copyright (C) 2019 The R Foundation for Statistical Computing
+Platform: x86_64-redhat-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> pkgname <- "mecgen"
+> source(file.path(R.home("share"), "R", "examples-header.R"))
+> options(warn = 1)
+> base::assign(".ExTimings", "mecgen-Ex.timings", pos = 'CheckExEnv')
+> base::cat("name\tuser\tsystem\telapsed\n", file=base::get(".ExTimings", pos = 'CheckExEnv'))
+> base::assign(".format_ptime",
++ function(x) {
++   if(!is.na(x[4L])) x[1L] <- x[1L] + x[4L]
++   if(!is.na(x[5L])) x[2L] <- x[2L] + x[5L]
++   options(OutDec = '.')
++   format(x[1L:3L], digits = 7L)
++ },
++ pos = 'CheckExEnv')
+> 
+> ### * </HEADER>
+> library('mecgen')
+> 
+> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+> cleanEx()
+> nameEx("cobo")
+> ### * cobo
+> 
+> flush(stderr()); flush(stdout())
+> 
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: cobo
+> ### Title: Generated antennas data for Cobo Calleja
+> ### Aliases: cobo
+> ### Keywords: datasets
+> 
+> ### ** Examples
+> 
+> data(cobo)
+> assocs <- build5GScenario(lats = cobo$lat, lons = cobo$lon)
+> 
+> m1Assoc <- assocs[[1]]
+> m1Coords <- assocs[[2]]   
+> m1AccAssocs <- assocs[[3]]   
+> accCentCoords <- assocs[[4]]   
+> m2Assocs <- assocs[[5]]   
+> m2Switches <- assocs[[6]]   
+> m2AggAssocs <- assocs[[7]]   
+> aggCentCoords <- assocs[[8]]   
+> m3Assocs <- assocs[[9]]   
+> m3Switches <- assocs[[10]]  
+> 
+> 
+> write5GtoGraph(m1Assoc, m1Coords, m1AccAssocs, accCentCoords,
++                            m2Assocs, m2Switches, m2AggAssocs, aggCentCoords,
++                            m3Assocs, m3Switches, format = "gml",
++                file = "/tmp/5g-mec.gml")
+Error in write5GtoGraph(m1Assoc, m1Coords, m1AccAssocs, accCentCoords,  : 
+  could not find function "write5GtoGraph"
+Execution halted
