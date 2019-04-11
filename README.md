@@ -118,6 +118,24 @@ attachFrames <- attachEndpoints(nodes = attachFrames$nodes,
 
 ```
 
+## Properties modification
+It might be the case that additional properties are necessary for the generated links, and nodes. To include or modify nodes and links' properties, the user can take advantage of `addLinkProps()` and `addNodeProps()`:
+
+```R
+# Adding radio technologies to some cell nodes
+cellNodeIds = c('cell0', 'cell3')
+radioTechs = list(radio = c('LTE', 'mmW'))
+newNodes <- addNodeProps(nodes = nodes, id_ = cellNodeIds,
+                         properties = radioTechs)
+
+# Adding reliability to the links ("cell0", "m1_1"), ("m1_1", "server_0")
+froms = c("cell0", "m1_1")
+tos = c("m1_1", "server_0")
+reliabilities = list(reliability = c(0.9, 0.8))
+newLinks <- addLinkProps(links = links, from_ = froms, to_ = tos,
+                         properties = reliabilities)
+```
+
 ## Graph creation
 The nodes and links `data.frame`s present in the result of `graphFrames()`, `attachServers()`, `attachFogNodes()`, and `attachEndpoints()`; are used as input for the generation of undirected graphs using `igraph` package:
 ```R
