@@ -104,6 +104,7 @@ attachFrames <- attachFogNodes(nodes = attachFrames$nodes,
                                bandwidthUnits = "Mpbs",
                                idPrefix = "test")
 ```
+In case each fog node has to be connected to cell nodes below a certain distance, such distance must be provided in meters to the `dis` parameter.
 
 ### Endpoints generation
 Endpoints can represent users consuming infrastructure resources, and `attachEndpoints()` generates them and associates them to the nearest cell antennas.
@@ -116,6 +117,27 @@ attachFrames <- attachEndpoints(nodes = attachFrames$nodes,
                                 bandwidthUnits = "Mbps",
                                 idPrefix = "person")
 
+```
+
+### Fog node endpoints generation
+Fog node endpoints are pairs of endpoints and fog nodes, representing entities that will hold a virtual network function running inside.
+For example, a drone is considered a fog node endpoint because it has both computational capacity, and it is an endpoint.
+
+The `attachFogEndpoints()` function creates nodes of type "fogNode" directly connected to their associated "endpoint" nodes. Here the endpoints are not attached to cell nodes, since the fog nodes are the ones connected.
+
+Code under `examples/roboticsSmall.R` contains the generation of 2 fog node endpoints, which attach to cell nodes at distances below 100 km:
+
+```R
+atDis <- 100000
+fogEndpoints <- 2
+attachFrames <- attachFogEndpoints(nodes = attachFrames$nodes,
+                                   links = attachFrames$links,
+                                   latB = coboLatB, latT = coboLatT,
+                                   lonL = coboLonL, lonR = coboLonR,
+                                   numNodes = fogEndpoints,
+                                   properties = list(cpu = 2, mem = 20),
+                                   bandwidth = 20, bandwidthUnits = "Mpbs",
+                                   idPrefix = "test", dis = atDis)
 ```
 
 ## Properties modification

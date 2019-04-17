@@ -119,9 +119,12 @@ attachServers <- function(nodes, links, numServers, bandwidth, bandwidthUnits,
 #' @param bandwidthUnits string for bandwidth units
 #' @param distanceUnits string for distance units
 #' @param idPrefix string to be prefixed before the fog node id
+#' @param dis minimum distance in meters to attach to a cell, if not specified
+#'            it attachs the fog nodes to their nearest cells
 #' @return list(nodes = data.frame, links = data.frame)
 attachFogNodes <- function(nodes, links, latB, latT, lonL, lonR, numNodes,
-                        properties, bandwidth, bandwidthUnits, idPrefix) {
+                           properties, bandwidth, bandwidthUnits, idPrefix,
+                           dis = -1) {
   cells <- nodes[which(nodes$type == "cell"),]
   if (nrow(cells) == 0) {
     warning("No cells within the nodes data.frame")
@@ -136,15 +139,17 @@ attachFogNodes <- function(nodes, links, latB, latT, lonL, lonR, numNodes,
   fogLats <- runif(n = numNodes, min = latB, max = latT)
   fogLons <- runif(n = numNodes, min = lonL, max = lonR)
   fogIds <- c()
+  assignedFog <- c()
   assignedCell <- c()
   distances <- c()
 
   for (fog in 1:numNodes) {
     fogLon <- fogLons[fog]
     fogLat <- fogLats[fog]
-    fogIds <- c(fogIds, paste(idPrefix, "_fogNode_", fog, sep = ""))
+    fogId <- paste(idPrefix, "_fogNode_", fog, sep = "")
+    fogIds <- c(fogIds, fogId)
 
-    # Find nearest cell to be assigned
+    # Find cells to be assigned
     assigned <- 1
     minDis <- Inf
     for (row in 1:nrow(cells)) {
@@ -155,10 +160,21 @@ attachFogNodes <- function(nodes, links, latB, latT, lonL, lonR, numNodes,
         assigned <- row
         minDis <- currDis
       }
+
+      # If falling within the accepted distance
+      if (dis > 0 && currDis <= dis) {
+        assignedFog <- c(assignedFog, fogId)
+        assignedCell <- c(assignedCell, as.vector(cells[row,]$id))
+        distances <- c(distances, currDis)
+      }
     }
 
-    assignedCell <- c(assignedCell, as.vector(cells[assigned,]$id))
-    distances <- c(distances, minDis)
+    # If we just assign to the minimum distance cell
+    if (dis == -1) {
+      assignedFog <- c(assignedFog, fogId)
+      assignedCell <- c(assignedCell, as.vector(cells[assigned,]$id))
+      distances <- c(distances, minDis)
+    }
   }
 
   # Create the nodes data.frame
@@ -169,7 +185,7 @@ attachFogNodes <- function(nodes, links, latB, latT, lonL, lonR, numNodes,
   }
 
   # Create the links data.frame
-  fogLinks <- data.frame(from = fogIds, to = assignedCell,
+  fogLinks <- data.frame(from = assignedFog, to = assignedCell,
                       bandwidth = rep(x = bandwidth, times = numNodes),
                       bandwidthUnits = rep(x = bandwidthUnits,
                                            times = numNodes),
@@ -178,6 +194,69 @@ attachFogNodes <- function(nodes, links, latB, latT, lonL, lonR, numNodes,
 
   return(list(nodes = stackAndFill(nodes, fogNodes),
               links = stackAndFill(links, fogLinks)))
+}
+
+
+#' @export
+#' @name attachFogEndpoints
+#' @title attachFogEndpoints
+#' @description Creates fog nodes with associated endpoints. The fog nodes are
+#' connected to cells, while the endpoints are attached to the fog nodes.
+#' @param nodes data.frame(id, type, lon, lat)
+#' @param link data.frame(from, to, bandwidth, bandwidthUnits, distance,
+#' distanceUnits)
+#' @param latB region bottom latitude limit
+#' @param latT region top latitude limit
+#' @param lonL region left longitude limit
+#' @param lonR region right longitude limit
+#' @param numNodes number of fog compute nodes to generate
+#' @param properties list with compute node resource properties
+#' @param bandwidth bandwidth for link between each server and the switch
+#' @param bandwidthUnits string for bandwidth units
+#' @param distanceUnits string for distance units
+#' @param idPrefix string to be prefixed before the fog node id
+#' @param dis minimum distance in meters to attach to a cell, if not specified
+#'            it attachs the fog nodes to their nearest cells
+#' @return list(nodes = data.frame, links = data.frame)
+attachFogEndpoints <- function(nodes, links, latB, latT, lonL, lonR, numNodes,
+                           properties, bandwidth, bandwidthUnits, idPrefix,
+                           dis = -1) {
+
+  attachFrames <- attachFogNodes(nodes = nodes, links = links, latB = latB,
+                                 latT = latT, lonL = lonL, lonR = lonR,
+                                 numNodes = numNodes,
+                                 properties = properties, bandwidth = bandwidth,
+                                 bandwidthUnits = "Mpbs",
+                                 idPrefix = paste("fogEndpoint_", idPrefix, sep=""),
+                                 dis = dis)
+
+  # Attach the endpoints associated to the fog nodes
+  fogNodes <- tail(attachFrames$nodes, n = numNodes)
+  endIds <- c()
+  endLons <- c()
+  endLats <- c()
+  froms <- c()
+  tos <- c()
+  for (row in 1:nrow(fogNodes)) {
+    endId <- paste("fogEndpoint_", idPrefix, "_endpoint_", row, sep="")
+    endIds <- c(endIds, endId)
+    endLons <- c(endLons, fogNodes[row,]$lon)
+    endLats <- c(endLats, fogNodes[row,]$lat)
+    froms <- c(froms, endId)
+    tos <- c(tos, as.vector(fogNodes$id)[row])
+  }
+
+  endPoints <- data.frame(id = endIds, type = rep("endpoint", times = numNodes),
+                          lon = endLons, lat = endLats)
+  end2FogLinks <- data.frame(from = froms, to = tos,
+                             bandwidth = rep(100000000000, times = numNodes),
+                             bandwidthUnits = rep("Mbps", times = numNodes),
+                             distance = rep(0, times = numNodes),
+                             distanceUnits = rep("meters", times = numNodes))
+
+
+  return(list(nodes = stackAndFill(attachFrames$nodes, endPoints),
+              links = stackAndFill(attachFrames$links, end2FogLinks)))
 }
 
 

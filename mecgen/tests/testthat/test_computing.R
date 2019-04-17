@@ -104,6 +104,150 @@ test_that("Fog nodes generation works", {
 })
 
 
+test_that("Fog nodes generation works with multiple cell assignments", {
+
+  # Build up the nodes and links for just 6 cells
+  cells <- 6
+  coboCells <- mecgen::cobo
+  regions <- mecgen::regions
+  coboCells <- head(coboCells, n = cells) # just 6 AAUs
+  assocs <- build5GScenario(lats = coboCells$lat, lons = coboCells$lon)
+  m1Assoc <- assocs[[1]]
+  m1Coords <- assocs[[2]]
+  m1AccAssocs <- assocs[[3]]
+  accCentCoords <- assocs[[4]]
+  m2Assocs <- assocs[[5]]
+  m2Switches <- assocs[[6]]
+  m2AggAssocs <- assocs[[7]]
+  aggCentCoords <- assocs[[8]]
+  m3Assocs <- assocs[[9]]
+  m3Switches <- assocs[[10]]
+  frames <- graphFrames(m1Assoc, m1Coords, m1AccAssocs, accCentCoords,
+                        m2Assocs, m2Switches, m2AggAssocs, aggCentCoords,
+                        m3Assocs, m3Switches)
+
+  nodes <- frames$nodes
+  links <- frames$links
+
+  nodes[["strangeVal"]] <- rep(x = 23, times = nrow(nodes))
+  coboLonL <- -3.775409
+  coboLonR <- -3.737324
+  coboLatB <- 40.253541
+  coboLatT <- 40.276686
+  bandwidth <- 1
+  bandwidthUnits <- "Gb/s"
+  properties <- list(cpu = 2, disk = 100, mem = 16, rare = 20)
+  numFogNodes <- 3
+  dis <- 100000 # 100 km of distance expressed in meters -> all cells assigned
+
+  attachFrames <- attachFogNodes(nodes = nodes, links = links,
+                                 latB = coboLatB, latT = coboLatT,
+                                 lonL = coboLonL, lonR = coboLonR,
+                                 numNodes = numFogNodes,
+                                 properties = properties, bandwidth = bandwidth,
+                                 bandwidthUnits = bandwidthUnits,
+                                 idPrefix = "test", dis = dis)
+
+  newNodes <- attachFrames$nodes
+  newLinks <- attachFrames$links
+  fogNodes <- tail(newNodes, n = numFogNodes)
+  fogLinks <- tail(newLinks, n = numFogNodes * cells)
+  fogIds <- c()
+  for (id in 1:numFogNodes) {
+    fogIds <- c(fogIds, paste("test_fogNode_", id, sep = ""))
+  }
+
+
+  expect_equal(as.vector(fogLinks$bandwidth),
+               rep(x = bandwidth, times = numFogNodes * cells))
+  expect_equal(as.vector(fogNodes$strangeVal),
+               rep(x = 0, times = numFogNodes))
+  expect_equal(as.vector(fogNodes$cpu),
+               rep(x = properties$cpu, times = numFogNodes))
+  expect_equal(as.vector(fogNodes$disk),
+               rep(x = properties$disk, times = numFogNodes))
+  expect_equal(as.vector(fogNodes$mem),
+               rep(x = properties$mem, times = numFogNodes))
+  expect_equal(as.vector(fogNodes$rare),
+               rep(x = properties$rare, times = numFogNodes))
+  expect_equal(head(newNodes, n = nrow(newNodes) - numFogNodes)$rare,
+               rep(x = 0, times = nrow(newNodes) - numFogNodes))
+  expect_equal(as.vector(fogNodes$type),
+               rep(x = "fogNode", times = numFogNodes))
+  expect_equal(as.vector(fogNodes$id), fogIds)
+})
+
+
+test_that("Fog node endpoints are generated correctly", {
+
+  # Build up the nodes and links for just 6 cells
+  cells <- 6
+  coboCells <- mecgen::cobo
+  regions <- mecgen::regions
+  coboCells <- head(coboCells, n = cells) # just 6 AAUs
+  assocs <- build5GScenario(lats = coboCells$lat, lons = coboCells$lon)
+  m1Assoc <- assocs[[1]]
+  m1Coords <- assocs[[2]]
+  m1AccAssocs <- assocs[[3]]
+  accCentCoords <- assocs[[4]]
+  m2Assocs <- assocs[[5]]
+  m2Switches <- assocs[[6]]
+  m2AggAssocs <- assocs[[7]]
+  aggCentCoords <- assocs[[8]]
+  m3Assocs <- assocs[[9]]
+  m3Switches <- assocs[[10]]
+  frames <- graphFrames(m1Assoc, m1Coords, m1AccAssocs, accCentCoords,
+                        m2Assocs, m2Switches, m2AggAssocs, aggCentCoords,
+                        m3Assocs, m3Switches)
+
+  nodes <- frames$nodes
+  links <- frames$links
+
+  nodes[["strangeVal"]] <- rep(x = 23, times = nrow(nodes))
+  coboLonL <- -3.775409
+  coboLonR <- -3.737324
+  coboLatB <- 40.253541
+  coboLatT <- 40.276686
+  bandwidth <- 1
+  bandwidthUnits <- "Gb/s"
+  properties <- list(cpu = 2, disk = 100, mem = 16, rare = 20)
+  numFogNodes <- 3
+  dis <- 100000 # 100 km of distance expressed in meters -> all cells assigned
+
+  attachFrames <- attachFogEndpoints(nodes = nodes, links = links,
+                                     latB = coboLatB, latT = coboLatT,
+                                     lonL = coboLonL, lonR = coboLonR,
+                                     numNodes = numFogNodes,
+                                     properties = properties,
+                                     bandwidth = bandwidth,
+                                     bandwidthUnits = bandwidthUnits,
+                                     idPrefix = "test", dis = dis)
+
+  newNodes <- attachFrames$nodes
+  newLinks <- attachFrames$links
+  fogNodes <- tail(newNodes, n = 2*numFogNodes)
+  fogLinks <- tail(newLinks, n = numFogNodes * (1 + cells))
+  fogIds <- c()
+  for (id in 1:numFogNodes) {
+    fogIds <- c(fogIds, paste("fogEndpoint_test_fogNode_", id, sep = ""))
+  }
+  for (id in 1:numFogNodes) {
+    fogIds <- c(fogIds, paste("fogEndpoint_test_endpoint_", id, sep = ""))
+  }
+
+  expect_equal(as.vector(fogNodes$id), fogIds)
+  expect_equal(as.vector(tail(fogLinks, n = numFogNodes)$distance),
+               rep(x = 0, times = numFogNodes))
+  expect_equal(as.vector(head(fogNodes, n = numFogNodes)$type),
+               rep(x = "fogNode", times = numFogNodes))
+  expect_equal(as.vector(tail(fogNodes, n = numFogNodes)$type),
+                rep(x = "endpoint", times = numFogNodes))
+  expect_equal(as.vector(tail(fogNodes, n = numFogNodes)$lon),
+               as.vector(head(fogNodes, n = numFogNodes)$lon))
+  expect_equal(as.vector(tail(fogNodes, n = numFogNodes)$lat),
+               as.vector(head(fogNodes, n = numFogNodes)$lat))
+})
+
 
 test_that("Endpoints generation works", {
   nodes <- mecgen::coboNodes
