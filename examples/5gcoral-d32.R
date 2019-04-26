@@ -133,10 +133,8 @@ coralD32 <- function(cells=36, m1_servers=6, m2_servers=1, fog_nodes=128,
   
   
   ######## Fog nodes volatility ##########
-  fogVolatility.mean <- 0.1
-  fogVolatility.diff <- 0.1 # percentual difference in the confidence interval
-  fogVolatility.values <- intervalExp(center = fogVolatility.mean,
-                                      diff = fogVolatility.diff, n = fog_nodes)
+  fogVolatility.values <- intervalExp(center = fog_vol_mean,
+                                      diff = fog_vol_dif, n = fog_nodes)
   
   fog.nodes <- subset(attachFrames$nodes, grepl(fogIdPrefix, id))
   fog.nodes.idx <- which(attachFrames$nodes$id %in% fog.nodes$id)
@@ -148,10 +146,8 @@ coralD32 <- function(cells=36, m1_servers=6, m2_servers=1, fog_nodes=128,
                                                  times=length(fog.nodes.ids))))
   
   ######## Edge nodes volatility ########
-  edgeVolatility.mean <- 0.01
-  edgeVolatility.diff <- 0.1
-  edgeVolatility.values <- intervalExp(center = edgeVolatility.mean,
-                                       diff = edgeVolatility.diff,
+  edgeVolatility.values <- intervalExp(center = m1_vol_mean,
+                                       diff = m1_vol_dif,
                                        n = m1_servers)
   edge.servers <- subset(attachFrames$nodes, grepl(edgeIdPrefix, id))
   edge.servers.idx <- which(attachFrames$nodes$id %in% edge.servers$id)
@@ -160,7 +156,7 @@ coralD32 <- function(cells=36, m1_servers=6, m2_servers=1, fog_nodes=128,
                                      id_=edge.servers.ids,
                                      properties=list(
                                        volatility=edgeVolatility.values,
-                                       radio=rep(x="edge",
+                                       radio=rep(x="fog,edge,cloud",
                                                  times=length(edge.servers.ids))))
   
   
