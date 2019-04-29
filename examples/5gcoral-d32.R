@@ -85,7 +85,8 @@ coralD32 <- function(cells=36, m1_servers=6, m2_servers=1, fog_nodes=128,
   attachFrames$nodes <- addNodeProps(nodes=attachFrames$nodes,
                                      id_=cloud.servers.ids,
                                      properties=list(
-                                       radio=rep(x="cloud", times=m2_servers)))
+                                       radio=rep(x="cloud_edge,cloud",
+                                                 times=m2_servers)))
   
   # Retrieve the Cobo Calleja region limiting coordinates
   coboRegion <- regions$regions[[2]]
@@ -142,7 +143,7 @@ coralD32 <- function(cells=36, m1_servers=6, m2_servers=1, fog_nodes=128,
   attachFrames$nodes <- addNodeProps(nodes=attachFrames$nodes, id_=fog.nodes.ids,
                                      properties=list(
                                        volatility=fogVolatility.values,
-                                       radio=rep(x="fog",
+                                       radio=rep(x="fog,fog_edge",
                                                  times=length(fog.nodes.ids))))
   
   ######## Edge nodes volatility ########
@@ -156,7 +157,7 @@ coralD32 <- function(cells=36, m1_servers=6, m2_servers=1, fog_nodes=128,
                                      id_=edge.servers.ids,
                                      properties=list(
                                        volatility=edgeVolatility.values,
-                                       radio=rep(x="fog,edge,cloud",
+                                       radio=rep(x="fog_edge,edge,edge_cloud",
                                                  times=length(edge.servers.ids))))
   
   
@@ -164,7 +165,7 @@ coralD32 <- function(cells=36, m1_servers=6, m2_servers=1, fog_nodes=128,
   froms <- c()
   tos <- c()
   linkReliabs <- c()
-  for (row in 1:nrow(attachFrames$nodes)) {
+  for (row in 1:nrow(attachFrames$links)) {
     linkFrom <- as.vector(attachFrames$links[row,]$from)
     linkTo <- as.vector(attachFrames$links[row,]$to)
     
@@ -173,20 +174,21 @@ coralD32 <- function(cells=36, m1_servers=6, m2_servers=1, fog_nodes=128,
     toFog <- length(grep(fogIdPrefix, linkTo)) > 0
     fromEdge <- length(grep(edgeIdPrefix, linkFrom)) > 0
     toEdge <- length(grep(edgeIdPrefix, linkTo)) > 0
+    froms <- c(froms, linkFrom)
+    tos <- c(tos, linkTo)
+
     if (fromFog || toFog) {
-      froms <- c(froms, linkFrom)
-      tos <- c(tos, linkTo)
       fogId <- ifelse(fromFog, yes = linkFrom, no = linkTo)
       linkReliabs <- c(linkReliabs,
                        1 - as.vector(attachFrames$nodes[
                               which(attachFrames$nodes$id == fogId),]$volatility))
-    } else if (fromEdge || fromFog) { # Link for an edge node
-      froms <- c(froms, linkFrom)
-      tos <- c(tos, linkTo)
+    } else if (fromEdge || toEdge) { # Link for an edge node
       edgeId <- ifelse(fromEdge, yes = linkFrom, no = linkTo)
       linkReliabs <- c(linkReliabs,
                        1 - as.vector(attachFrames$nodes[
                              which(attachFrames$nodes$id == edgeId),]$volatility))
+    } else { # no fog/edge links have reliability 1
+      linkReliabs <- c(linkReliabs, 1)
     }
   }
   attachFrames$links <- addLinkProps(links = as.data.frame(attachFrames$links),
