@@ -85,7 +85,7 @@ coralD32 <- function(cells=36, m1_servers=6, m2_servers=1, fog_nodes=128,
   attachFrames$nodes <- addNodeProps(nodes=attachFrames$nodes,
                                      id_=cloud.servers.ids,
                                      properties=list(
-                                       radio=rep(x="cloud_edge,cloud",
+                                       radio=rep(x="edge_cloud,cloud",
                                                  times=m2_servers)))
   
   # Retrieve the Cobo Calleja region limiting coordinates
