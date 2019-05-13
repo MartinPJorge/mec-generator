@@ -97,7 +97,8 @@ serversCost <- rep(x = 100, times = length(serverIdxs))
 
 newNodes <- addNodeProps(nodes = newNodes,
                          id_ = cellIdxs, properties = list(radio = radioTechs,
-                                           radioCost = radioCost))
+                                           radioCost = radioCost,
+                                           cpu = 1)) # 1 CPU for vAP
 newNodes <- addNodeProps(node = as.data.frame(newNodes), id_ = serverIdxs,
                          properties = list(resCost = serversCost))
 
