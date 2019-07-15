@@ -19,6 +19,23 @@ macro-cells-generator.R | It generates a CSV file with macro-cell antennas locat
 mec-locations.R | It generates the locations of MEC PoPs based on the antennas coordinates and the radio technology used. Several methods for the selection of such locations are available. See [mec-locations note](#mec-locations) for more details. | `mec-locations.R regionID numLatSamples numLonSamples mecParamsJSON numMECs\<0 radioTech(FDD30kHz2sSPS, FDD120kHz7sSPS, TDD120kHz7sSPS) method(basicm1, basicm2, dig-outm1, dig-outm2, basicm1m2, dig-outm1m2) macro-cells.csv femto-cells.csv\NULL road-cells.csv\NULL MEClocations.csv intMatM1.csv\NULL intMatM2.csv\NULL`
 plot-mec-locs.R | It plots the locations of the MEC PoPs with the M1 and M2 based intensity functions as heat-map along the locations. | `plot-mec-locs.R regionID latSamples lonSamples MEC_LOCATIONS_CSV MEC_M1_DIR\NULL MEC_M2_DIR\NULL OUT_PLOT_M1 OUT_PLOT_M2`
 
+## Dependencies
+
+The PPP scripts are written in [R](https://www.r-project.org/) and they use the following packages:
+
+```
+SDMTools
+cluster
+ggmap
+graphics
+latex2exp
+metR
+pracma
+rjson
+spatstat
+stringi
+```
+
 ## Script notes
 ### Macro-cells factors generation
 * `factor / avgAAUs`: if people intensity function is multiplied by this at each km^2 square of the region, we get on average the AAUs passed by argument
