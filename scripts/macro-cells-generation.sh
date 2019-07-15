@@ -29,7 +29,7 @@ MACRO_CELL_FACTORS="$ANTENNA_DIR/macro-cells-gen-factors.csv"
 PEOPLE_INT_MAT="$PEOPLE_DIR/people-intensity-matrix.csv"
 PEOPLE_INT_LONS="$PEOPLE_DIR/people-intensity-longitudes"
 PEOPLE_INT_LATS="$PEOPLE_DIR/people-intensity-latitudes"
-MACRO_CELLS_DIR="$ANTENNA_DIR/$REGION_ID/macro-cells-`date +%s`"
+MACRO_CELLS_DIR="$ANTENNA_DIR/macro-cells-`date +%s`"
 
 # Input script parameters
 GENERATIONS=100 # number of macro-cells generations
