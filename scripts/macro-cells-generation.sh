@@ -23,17 +23,38 @@ set -o nounset                              # Treat unset variables as an error
 REGION_ID="Madrid-center"
 LON_SAMPLES=100
 LAT_SAMPLES=100
-MACRO_CELL_FACTORS="../data/antennas/$REGION_ID/macro-cells-gen-factors.csv"
-PEOPLE_INT_MAT="../data/people/$REGION_ID/people-intensity-matrix.csv"
-PEOPLE_INT_LONS="../data/people/$REGION_ID/people-intensity-longitudes"
-PEOPLE_INT_LATS="../data/people/$REGION_ID/people-intensity-latitudes"
-MACRO_CELLS_DIR="../data/antennas/$REGION_ID/macro-cells-`date +%s`"
+PEOPLE_DIR="../data/people/$REGION_ID"
+ANTENNA_DIR="../data/antennas/$REGION_ID"
+MACRO_CELL_FACTORS="$ANTENNA_DIR/macro-cells-gen-factors.csv"
+PEOPLE_INT_MAT="$PEOPLE_DIR/people-intensity-matrix.csv"
+PEOPLE_INT_LONS="$PEOPLE_DIR/people-intensity-longitudes"
+PEOPLE_INT_LATS="$PEOPLE_DIR/people-intensity-latitudes"
+MACRO_CELLS_DIR="$ANTENNA_DIR/macro-cells-`date +%s`"
 
 # Input script parameters
 GENERATIONS=100 # number of macro-cells generations
 AAUs=12 # number of AAUs per km^2
 
+# Bail out if the antenna directory does not exist
+if [ ! -d $ANTENNA_DIR ] ; then
+  echo "Antenna directory '$ANTENNA_DIR' does not exist, exiting"
+  exit 1
+fi
 
+# Create output directory if not present
+if [ -d $PEOPLE_DIR ] ; then
+  echo "People directory '$PEOPLE_DIR' exists: content may be overwritten"
+else
+  if [ -a $PEOPLE_DIR ] ; then
+    echo "'$PEOPLE_DIR' exists but it is not a directory, exiting"
+    exit 1
+  fi
+  mkdir -p $PEOPLE_DIR 2> /dev/null
+  if [ $? -ne 0 ] ; then
+    echo "Could not create people directory '$PEOPLE_DIR', exiting"
+    exit 1
+  fi
+fi
 
 # Get inside the pp/ directory
 cd ../pp
