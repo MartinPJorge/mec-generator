@@ -426,6 +426,14 @@ build5GScenario <- function(lats, lons) {
                              maxDis = 10000)
   m1Coords <- groupCenters(lats = m1Assoc$lat, lons = m1Assoc$lon,
                            groups = m1Assoc$group)
+  if (nrow(m1Coords) < 6) {
+    for (i in (1+nrow(m1Coords)):6) {
+      rLat <- m1Coords[i-1,]$lat + runif(1)*1e-3
+      rLon <- m1Coords[i-1,]$lon + runif(1)*1e-3
+      m1New <- data.frame(lon=rLon, lat=rLat, group=m1Coords[i-1,]$group+1)
+      m1Coords <- rbind(m1Coords, m1New)
+    }
+  }
 
   # Create the access rings with their center coordinates
   m1AccAssocs <- groupElems(lats = m1Coords$lat, lons = m1Coords$lon,
@@ -438,6 +446,14 @@ build5GScenario <- function(lats, lons) {
                            groupN = 4, maxDis = 20000)
   m2Switches <- groupCenters(lats = m2Assocs$lat, lons = m2Assocs$lon,
                              groups = m2Assocs$group)
+  if (nrow(m2Switches) < 6) {
+    for (i in (1+nrow(m2Switches)):6) {
+      rLat <- m2Switches[i-1,]$lat + runif(1)*1e-3
+      rLon <- m2Switches[i-1,]$lon + runif(1)*1e-3
+      m2New <- data.frame(lon=rLon, lat=rLat, group=m2Switches[i-1,]$group+1)
+      m2Switches <- rbind(m2Switches, m2New)
+    }
+  }
 
   # Create the aggregation rings with their center coordinates
   m2AggAssocs <- groupElems(lats = m2Switches$lat, lons = m2Switches$lon,
@@ -514,3 +530,24 @@ build5GScenario <- function(lats, lons) {
 ###
 ### g = igraph::graph_from_data_frame(links, vertices = nodes, directed = FALSE)
 ### igraph::write_graph(graph = g, file = "/tmp/5g-mec.gml", format = "gml")
+
+
+madrid_cell_locations <- read.csv(file = '~/Documentos/estancia-polito/report/notebook-infocom2020/cell-locations.csv', header = TRUE)
+assocs <- build5GScenario(lats = madrid_cell_locations$latitude,
+                          lons = madrid_cell_locations$longitude)
+
+m1Assoc <- assocs[[1]]
+m1Coords <- assocs[[2]]
+m1AccAssocs <- assocs[[3]]
+accCentCoords <- assocs[[4]]
+m2Assocs <- assocs[[5]]
+m2Switches <- assocs[[6]]
+m2AggAssocs <- assocs[[7]]
+aggCentCoords <- assocs[[8]]
+m3Assocs <- assocs[[9]]
+m3Switches <- assocs[[10]]
+
+
+frames <- graphFrames(m1Assoc, m1Coords, m1AccAssocs, accCentCoords,
+                      m2Assocs, m2Switches, m2AggAssocs, aggCentCoords,
+                      m3Assocs, m3Switches)
