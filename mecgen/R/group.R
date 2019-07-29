@@ -532,22 +532,21 @@ build5GScenario <- function(lats, lons) {
 ### igraph::write_graph(graph = g, file = "/tmp/5g-mec.gml", format = "gml")
 
 
-madrid_cell_locations <- read.csv(file = '~/Documentos/estancia-polito/report/notebook-infocom2020/cell-locations.csv', header = TRUE)
-assocs <- build5GScenario(lats = madrid_cell_locations$latitude,
-                          lons = madrid_cell_locations$longitude)
-
-m1Assoc <- assocs[[1]]
-m1Coords <- assocs[[2]]
-m1AccAssocs <- assocs[[3]]
-accCentCoords <- assocs[[4]]
-m2Assocs <- assocs[[5]]
-m2Switches <- assocs[[6]]
-m2AggAssocs <- assocs[[7]]
-aggCentCoords <- assocs[[8]]
-m3Assocs <- assocs[[9]]
-m3Switches <- assocs[[10]]
-
-
-frames <- graphFrames(m1Assoc, m1Coords, m1AccAssocs, accCentCoords,
-                      m2Assocs, m2Switches, m2AggAssocs, aggCentCoords,
-                      m3Assocs, m3Switches)
+### madrid_cell_locations <- read.csv(file = '~/Documentos/estancia-polito/report/notebook-infocom2020/cell-locations.csv', header = TRUE)
+### assocs <- build5GScenario(lats = madrid_cell_locations$latitude,
+###                           lons = madrid_cell_locations$longitude)
+###
+### m1Assoc <- assocs[[1]]
+### m1Coords <- assocs[[2]]
+### m1AccAssocs <- assocs[[3]]
+### accCentCoords <- assocs[[4]]
+### m2Assocs <- assocs[[5]]
+### m2Switches <- assocs[[6]]
+### m2AggAssocs <- assocs[[7]]
+### aggCentCoords <- assocs[[8]]
+### m3Assocs <- assocs[[9]]
+### m3Switches <- assocs[[10]]
+###
+### frames <- graphFrames(m1Assoc, m1Coords, m1AccAssocs, accCentCoords,
+###                       m2Assocs, m2Switches, m2AggAssocs, aggCentCoords,
+###                       m3Assocs, m3Switches)
