@@ -175,23 +175,22 @@ Picture below represents the graph representation of the 5G MEC infrastructure (
 
 
 ## Cite our work
-If you use mecgen package, please consider citing our article:
+If you use repo in your work, please consider citing our article:
 ```BibTeX
-@INPROCEEDINGS{
- 8931334,
- author={J. {Martín-Pérez} and L. {Cominardi} and C. J. {Bernardos} and A. {Mourad}},
- booktitle={2019 IEEE Conference on Standards for Communications and Networking (CSCN)},
- title={5GEN: A tool to generate 5G infrastructure graphs},
- year={2019},
- volume={},
- number={},
- pages={1-4},
- doi={10.1109/CSCN.2019.8931334}
+@ARTICLE{8667076,
+  author={J. {Martín-Pérez} and L. {Cominardi} and C. J. {Bernardos} and A. {de la Oliva} and A. {Azcorra}},
+  journal={IEEE Transactions on Broadcasting},
+  title={Modeling Mobile Edge Computing Deployments for Low Latency Multimedia Services},
+  year={2019},
+  volume={65},
+  number={2},
+  pages={464-474},
+  doi={10.1109/TBC.2019.2901406}
 }
 ```
 
 ```txt
-J. Martín-Pérez, L. Cominardi, C. J. Bernardos and A. Mourad, "5GEN: A tool to generate 5G infrastructure graphs," 2019 IEEE Conference on Standards for Communications and Networking (CSCN), GRANADA, Spain, 2019, pp. 1-4, doi: 10.1109/CSCN.2019.8931334.
+J. Martín-Pérez, L. Cominardi, C. J. Bernardos, A. de la Oliva and A. Azcorra, "Modeling Mobile Edge Computing Deployments for Low Latency Multimedia Services," in IEEE Transactions on Broadcasting, vol. 65, no. 2, pp. 464-474, June 2019, doi: 10.1109/TBC.2019.2901406.
 ```
 
 
