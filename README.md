@@ -173,6 +173,28 @@ Picture below represents the graph representation of the 5G MEC infrastructure (
 ![Image with the graph representation of the 5G MEC infrastructure](https://github.com/MartinPJorge/mec-generator/blob/5g-infra-gen/img/infra-graphs.png)
 
 
+
+## Cite our work
+If you use mecgen package, please consider citing our article:
+```BibTeX
+@INPROCEEDINGS{
+ 8931334,
+ author={J. {Martín-Pérez} and L. {Cominardi} and C. J. {Bernardos} and A. {Mourad}},
+ booktitle={2019 IEEE Conference on Standards for Communications and Networking (CSCN)},
+ title={5GEN: A tool to generate 5G infrastructure graphs},
+ year={2019},
+ volume={},
+ number={},
+ pages={1-4},
+ doi={10.1109/CSCN.2019.8931334}
+}
+```
+
+```txt
+J. Martín-Pérez, L. Cominardi, C. J. Bernardos and A. Mourad, "5GEN: A tool to generate 5G infrastructure graphs," 2019 IEEE Conference on Standards for Communications and Networking (CSCN), GRANADA, Spain, 2019, pp. 1-4, doi: 10.1109/CSCN.2019.8931334.
+```
+
+
 ### References
 [1] L. Cominardi, L. M. Contreras, C. J. Bcrnardos and I. Berberana, **"Understanding QoS Applicability in 5G Transport Networks,"** 2018 IEEE International Symposium on Broadband Multimedia Systems and Broadcasting (BMSB), Valencia, 2018, pp. 1-5.
 doi: 10.1109/BMSB.2018.8436847
