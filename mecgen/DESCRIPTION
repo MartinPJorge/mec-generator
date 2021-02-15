@@ -20,5 +20,4 @@ Imports:
     fields,
     geosphere,
     igraph
-Suggests: 
-    testthat
+

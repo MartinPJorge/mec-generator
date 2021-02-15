@@ -120,7 +120,7 @@ linkAccessRings <- function(m1Assoc, m1Coords, m1AccAssocs, accCentCoords,
         m1Dst <- ringM1s[m1Row,]
         origins <- c(origins, paste("m1_", m1Src$group, sep = ""))
         ends <- c(ends, paste("m1_", m1Dst$group, sep = ""))
-        bandwidths <- c(bandwidths, 300)
+        bandwidths <- c(bandwidths, "300")
         bandwidthUnits <- c(bandwidthUnits, "Gb/s")
         dis <- SDMTools::distance(lat1 = m1Src$lat, lon1 = m1Src$lon,
                                   lat2 = m1Dst$lat, lon2 = m1Dst$lon)$distance
@@ -133,7 +133,7 @@ linkAccessRings <- function(m1Assoc, m1Coords, m1AccAssocs, accCentCoords,
     lastM1 <- tail(ringM1s, n = 1)
     origins <- c(origins, paste("m1_", lastM1$group, sep = ""))
     ends <- c(ends, paste("m2_", m2$group, sep = ""))
-    bandwidths <- c(bandwidths, 300)
+    bandwidths <- c(bandwidths, "300")
     bandwidthUnits <- c(bandwidthUnits, "Gb/s")
     dis <- SDMTools::distance(lat1 = lastM1$lat, lon1 = lastM1$lon,
                               lat2 = m2$lat, lon2 = m2$lon)$distance
@@ -248,9 +248,11 @@ linkAggRings <- function(m2Assocs, m2Switches, m2AggAssocs, aggCentCoords,
 
 
 #' @export
-#' @name graphFrames
-#' @title graphFrames
-#' @description creates the nodes and links data frames for the graph creation
+#' @name write5GtoGraph
+#' @title write5GtoGraph
+#' @description Writes the 5G scenario as a graph. Each data.frame parameter
+#' contains lat and lon coordinates and group columns to indicate associations
+#' among elements.
 #' @param m1Assoc data.frame cell coordinates and the M1 ids
 #' @param m1Coords data.frame M1 coordinates and their ids
 #' @param m1AccAssocs data.frame M1 coordinates and the access ring ids
@@ -261,14 +263,11 @@ linkAggRings <- function(m2Assocs, m2Switches, m2AggAssocs, aggCentCoords,
 #' @param aggCentCoords data.frame aggregation ring centers and their ids
 #' @param m3Assocs data.frame aggregation ring centers and M3 ids
 #' @param m3Switches data.frame with M3 coordinates and their ids
-#' @param servers data.frame with created servers
-#' @param fogNodes data.frame with fog computing nodes
-#' @param endpoints data.frame with endpoints
-#' @return list(links=data.frame, nodes=data.frame)
-graphFrames <- function(m1Assoc, m1Coords, m1AccAssocs, accCentCoords,
+#' @param format output graph format
+#' @param file path to the file where the graph is stored
+write5GtoGraph <- function(m1Assoc, m1Coords, m1AccAssocs, accCentCoords,
                            m2Assocs, m2Switches, m2AggAssocs, aggCentCoords,
-                           m3Assocs, m3Switches, servers = NULL,
-                        fogNodes = NULL, endpoints = NULL) {
+                           m3Assocs, m3Switches, format, file) {
 
   ################## NODES CREATION ##################
   nodes <- NULL
@@ -313,7 +312,6 @@ graphFrames <- function(m1Assoc, m1Coords, m1AccAssocs, accCentCoords,
     nodeLons <- c(nodeLons, m3Switches[row,]$lon)
     nodeLats <- c(nodeLats, m3Switches[row,]$lat)
   }
-
   nodes <- data.frame(id = nodeIds, type = nodeTypes, lon = nodeLons,
                       lat = nodeLats)
 
@@ -376,29 +374,27 @@ graphFrames <- function(m1Assoc, m1Coords, m1AccAssocs, accCentCoords,
       distances <- c(distances, dis)
       distanceUnits <- c(distanceUnits, "meters")
     }
-
-    # Connect last M3 to first replica M3
-    lastM3 <- tail(m3Switches, n = 1)
-    firstM3 <- head(m3Switches, n = 1)
-    dis <- SDMTools::distance(lat1 = lastM3$lat, lon1 = lastM3$lon,
-                              lat2 = firstM3$lat, lon2 = firstM3$lon)$distance
-    origins <- c(origins, paste("m3_", lastM3$group, sep = ""))
-    ends <- c(ends, paste("m3_rep_", firstM3$group, sep = ""))
-    bandwidths <- c(bandwidths, 36)
-    bandwidthUnits <- c(bandwidthUnits, "Tb/s")
-    distances <- c(distances, dis)
-    distanceUnits <- c(distanceUnits, "meters")
   }
 
+  # Connect last M3 to first replica M3
+  lastM3 <- tail(m3Switches, n = 1)
+  firstM3 <- head(m3Switches, n = 1)
+  dis <- SDMTools::distance(lat1 = lastM3$lat, lon1 = lastM3$lon,
+                            lat2 = firstM3$lat, lon2 = firstM3$lon)$distance
+  origins <- c(origins, paste("m3_", lastM3$group, sep = ""))
+  ends <- c(ends, paste("m3_rep_", firstM3$group, sep = ""))
+  bandwidths <- c(bandwidths, 36)
+  bandwidthUnits <- c(bandwidthUnits, "Tb/s")
+  distances <- c(distances, dis)
+  distanceUnits <- c(distanceUnits, "meters")
 
   links <- data.frame(from = origins, to = ends, bandwidth = bandwidths,
                       bandwidthUnits = bandwidthUnits, distance = distances,
                       distanceUnits = distanceUnits)
 
-  return(list(links = links, nodes = nodes))
-  #### # Build and write the graph
-  #### g = igraph::graph_from_data_frame(links, vertices = nodes, directed = FALSE)
-  #### igraph::write_graph(graph = g, file = file, format = format)
+  # Build and write the graph
+  g = igraph::graph_from_data_frame(links, vertices = nodes, directed = FALSE)
+  igraph::write_graph(graph = g, file = file, format = format)
 }
 
 
@@ -426,14 +422,6 @@ build5GScenario <- function(lats, lons) {
                              maxDis = 10000)
   m1Coords <- groupCenters(lats = m1Assoc$lat, lons = m1Assoc$lon,
                            groups = m1Assoc$group)
-  if (nrow(m1Coords) < 6) {
-    for (i in (1+nrow(m1Coords)):6) {
-      rLat <- m1Coords[i-1,]$lat + runif(1)*1e-3
-      rLon <- m1Coords[i-1,]$lon + runif(1)*1e-3
-      m1New <- data.frame(lon=rLon, lat=rLat, group=m1Coords[i-1,]$group+1)
-      m1Coords <- rbind(m1Coords, m1New)
-    }
-  }
 
   # Create the access rings with their center coordinates
   m1AccAssocs <- groupElems(lats = m1Coords$lat, lons = m1Coords$lon,
@@ -446,14 +434,6 @@ build5GScenario <- function(lats, lons) {
                            groupN = 4, maxDis = 20000)
   m2Switches <- groupCenters(lats = m2Assocs$lat, lons = m2Assocs$lon,
                              groups = m2Assocs$group)
-  if (nrow(m2Switches) < 6) {
-    for (i in (1+nrow(m2Switches)):6) {
-      rLat <- m2Switches[i-1,]$lat + runif(1)*1e-3
-      rLon <- m2Switches[i-1,]$lon + runif(1)*1e-3
-      m2New <- data.frame(lon=rLon, lat=rLat, group=m2Switches[i-1,]$group+1)
-      m2Switches <- rbind(m2Switches, m2New)
-    }
-  }
 
   # Create the aggregation rings with their center coordinates
   m2AggAssocs <- groupElems(lats = m2Switches$lat, lons = m2Switches$lon,
@@ -474,79 +454,23 @@ build5GScenario <- function(lats, lons) {
 
 
 
-####### TEST
-### coboCells <- mecgen::cobo
-### assocs <- build5GScenario(lats = coboCells$lat, lons = coboCells$lon)
-###
-### m1Assoc <- assocs[[1]]
-### m1Coords <- assocs[[2]]
-### m1AccAssocs <- assocs[[3]]
-### accCentCoords <- assocs[[4]]
-### m2Assocs <- assocs[[5]]
-### m2Switches <- assocs[[6]]
-### m2AggAssocs <- assocs[[7]]
-### aggCentCoords <- assocs[[8]]
-### m3Assocs <- assocs[[9]]
-### m3Switches <- assocs[[10]]
-### coboLonL <- -3.775409
-### coboLonR <- -3.737324
-### coboLatB <- 40.253541
-### coboLatT <- 40.276686
-###
-###
-### frames <- graphFrames(m1Assoc, m1Coords, m1AccAssocs, accCentCoords,
-###                            m2Assocs, m2Switches, m2AggAssocs, aggCentCoords,
-###                            m3Assocs, m3Switches)
-###
-###
-### attachFrames <- attachServers(nodes = frames$nodes, links = frames$links,
-###                               numServers = 3,
-###                               bandwidth = 12,
-###                               bandwidthUnits = "Mbps",
-###                               distance = 0,
-###                               distanceUnits = "meter",
-###                               switchType = "m2",
-###                               properties = list(cpu=2), idPrefix = "dell")
-###
-### attachFrames <- attachFogNodes(nodes = attachFrames$nodes,
-###                                links = attachFrames$links,
-###                                latB = coboLatB, latT = coboLatT,
-###                                lonL = coboLonL, lonR = coboLonR,
-###                                numNodes = 10,
-###                                properties = list(mem=20), bandwidth = 20,
-###                                bandwidthUnits = "Mpbs",
-###                                idPrefix = "test")
-###
-### attachFrames <- attachEndpoints(nodes = attachFrames$nodes,
-###                                 links = attachFrames$links, latB = coboLatB,
-###                                 latT = coboLatT, lonL = coboLonL,
-###                                 lonR = coboLonR, numEndpoints = 10,
-###                                 bandwidth = 10,
-###                                 bandwidthUnits = "Mbps",
-###                                 idPrefix = "person")
-###
-### links <- attachFrames$links
-### nodes <- attachFrames$nodes
-###
-### g = igraph::graph_from_data_frame(links, vertices = nodes, directed = FALSE)
-### igraph::write_graph(graph = g, file = "/tmp/5g-mec.gml", format = "gml")
-
-
-### madrid_cell_locations <- read.csv(file = '~/Documentos/estancia-polito/report/notebook-infocom2020/cell-locations.csv', header = TRUE)
-### assocs <- build5GScenario(lats = madrid_cell_locations$latitude,
-###                           lons = madrid_cell_locations$longitude)
-###
-### m1Assoc <- assocs[[1]]
-### m1Coords <- assocs[[2]]
-### m1AccAssocs <- assocs[[3]]
-### accCentCoords <- assocs[[4]]
-### m2Assocs <- assocs[[5]]
-### m2Switches <- assocs[[6]]
-### m2AggAssocs <- assocs[[7]]
-### aggCentCoords <- assocs[[8]]
-### m3Assocs <- assocs[[9]]
-### m3Switches <- assocs[[10]]
-###
-### frames <- graphFrames(m1Assoc, m1Coords, m1AccAssocs, accCentCoords,
-###                       m2Assocs, m2Switches, m2AggAssocs, aggCentCoords,
-###                       m3Assocs, m3Switches)
+######### TEST
+#  coboCells <- read.csv(file = '/home/jorge/Documentos/mec-generator/data/antennas/Cobo-Calleja/Cobo-Calleja.csv')
+#  assocs <- build5GScenario(lats = coboCells$lat, lons = coboCells$lon)
+#
+#  m1Assoc <- assocs[[1]]
+#  m1Coords <- assocs[[2]]
+#  m1AccAssocs <- assocs[[3]]
+#  accCentCoords <- assocs[[4]]
+#  m2Assocs <- assocs[[5]]
+#  m2Switches <- assocs[[6]]
+#  m2AggAssocs <- assocs[[7]]
+#  aggCentCoords <- assocs[[8]]
+#  m3Assocs <- assocs[[9]]
+#  m3Switches <- assocs[[10]]
+#
+#
+#  write5GtoGraph(m1Assoc, m1Coords, m1AccAssocs, accCentCoords,
+#                             m2Assocs, m2Switches, m2AggAssocs, aggCentCoords,
+#                             m3Assocs, m3Switches, format = "gml",
+#                 file = "/tmp/5g-luca.gml")

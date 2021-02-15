@@ -5,6 +5,12 @@
 # Generated people data
 data/people/*/lon*lat*.csv
 
+# Package data files
+!mecgen/data/cobo.RData
+!mecgen/data/coboLinks.RData
+!mecgen/data/coboNodes.RData
+!mecgen/data/regions.RData
+
 # Gridded data
 data/*/*/gridded*
 .Rproj.user
