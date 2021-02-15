@@ -63,3 +63,24 @@ Under the `/script` directory there are some scripts that perform automatically 
 script | description | usage
  ----- | ----------- | ----
 `macro-cells-generation.sh` | It performs the necessary steps to generate macro-cells in the region contained in the `REGION_ID` variable inside the script. The generated macro-cells are located in a CSV under the `/data/antennas/REGION_ID/macro-cells-TIMESTAMP/` | `./macro-cells-generation.sh`
+
+
+
+## Cite our work
+If you use repo in your work, please consider citing our article:
+```BibTeX
+@ARTICLE{8667076,
+  author={J. {Martín-Pérez} and L. {Cominardi} and C. J. {Bernardos} and A. {de la Oliva} and A. {Azcorra}},
+  journal={IEEE Transactions on Broadcasting},
+  title={Modeling Mobile Edge Computing Deployments for Low Latency Multimedia Services},
+  year={2019},
+  volume={65},
+  number={2},
+  pages={464-474},
+  doi={10.1109/TBC.2019.2901406}
+}
+```
+
+```txt
+J. Martín-Pérez, L. Cominardi, C. J. Bernardos, A. de la Oliva and A. Azcorra, "Modeling Mobile Edge Computing Deployments for Low Latency Multimedia Services," in IEEE Transactions on Broadcasting, vol. 65, no. 2, pp. 464-474, June 2019, doi: 10.1109/TBC.2019.2901406.
+```
