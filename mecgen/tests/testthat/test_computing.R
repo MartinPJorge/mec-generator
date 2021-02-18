@@ -2,8 +2,8 @@ context("Computing assignments")
 library(mecgen)
 
 test_that("Server assignments work", {
-  nodes <- mecgen::coboNodes
-  links <- mecgen::coboLinks
+  nodes <- data(coboNodes)
+  links <- data(coboLinks)
 
   nodes[["strangeVal"]] <- rep(x = 23, times = nrow(nodes))
   bandwidth <- 1
@@ -53,8 +53,8 @@ test_that("Server assignments work", {
 
 
 test_that("Fog nodes generation works", {
-  nodes <- mecgen::coboNodes
-  links <- mecgen::coboLinks
+  nodes <- data(coboNodes)
+  links <- data(coboLinks)
 
   nodes[["strangeVal"]] <- rep(x = 23, times = nrow(nodes))
   coboLonL <- -3.775409
@@ -108,8 +108,8 @@ test_that("Fog nodes generation works with multiple cell assignments", {
 
   # Build up the nodes and links for just 6 cells
   cells <- 6
-  coboCells <- mecgen::cobo
-  regions <- mecgen::regions
+  coboCells <- data(cobo)
+  regions <-   data(regions)
   coboCells <- head(coboCells, n = cells) # just 6 AAUs
   assocs <- build5GScenario(lats = coboCells$lat, lons = coboCells$lon)
   m1Assoc <- assocs[[1]]
@@ -182,8 +182,8 @@ test_that("Fog node endpoints are generated correctly", {
 
   # Build up the nodes and links for just 6 cells
   cells <- 6
-  coboCells <- mecgen::cobo
-  regions <- mecgen::regions
+  coboCells <- data(cobo)
+  regions <-   data(regions)
   coboCells <- head(coboCells, n = cells) # just 6 AAUs
   assocs <- build5GScenario(lats = coboCells$lat, lons = coboCells$lon)
   m1Assoc <- assocs[[1]]
@@ -250,8 +250,8 @@ test_that("Fog node endpoints are generated correctly", {
 
 
 test_that("Endpoints generation works", {
-  nodes <- mecgen::coboNodes
-  links <- mecgen::coboLinks
+  nodes <- data(coboNodes)
+  links <- data(coboLinks)
 
   nodes[["strangeVal"]] <- rep(x = 23, times = nrow(nodes))
   coboLonL <- -3.775409

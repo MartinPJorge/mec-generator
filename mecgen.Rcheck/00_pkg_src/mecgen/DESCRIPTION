@@ -13,8 +13,8 @@ LazyData: true
 RoxygenNote: 6.1.1
 Imports: pracma, SDMTools, spatstat, rjson, cluster, fields, geosphere,
         igraph
-Suggests: testthat
 NeedsCompilation: no
-Packaged: 2019-04-10 12:48:44 UTC; jorge
+Packaged: 2021-02-18 11:08:02 UTC; jorge
 Author: Jorge Martin Perez [aut, cre]
 Maintainer: Jorge Martin Perez <jmartinp@it.uc3m.es>
+Depends: R (>= 3.5.0)

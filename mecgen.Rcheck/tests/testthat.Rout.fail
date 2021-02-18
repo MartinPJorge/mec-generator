@@ -1,5 +1,5 @@
 
-R version 3.5.3 (2019-03-11) -- "Great Truth"
+R version 3.6.1 (2019-07-05) -- "Action of the Toes"
 Copyright (C) 2019 The R Foundation for Statistical Computing
 Platform: x86_64-redhat-linux-gnu (64-bit)
 
@@ -19,22 +19,71 @@ Type 'q()' to quit R.
 > library(mecgen)
 > 
 > test_check("mecgen")
-[31m──[39m [31m1. Error: Server assignments work (@test_c[39m
+[31m──[39m [31m1. Error: Server assignments work (@test_computing.R#8) [39m [31m───────────[39m
 invalid 'times' argument
-1: attachServers(nodes = nodes, links = links, numServers = rep(x = numServers, 
-       times = numServers), delay = rep(x = delay, 
-       times = numServers), bandwidth = rep(x = bandwidth, 
-       times = numServers), bandwidthUnits = rep(x = bandwidthUnits, 
-       times = numServers), distance = rep(x = distance, 
-       times = numServers), distanceUnits = rep(x = distanceUnits, 
-       times = numServers), switchType = "m2", properties = properties, 
-       idPrefix = "dell_") at testthat/test_computing.R:17
-2: data.frame(id = servIds, lon = servLons, lat = servLats, 
-       type = rep(x = "server", times = numServers))
+1: .handleSimpleError(function (e) 
+   {
+       handled <<- TRUE
+       test_error <<- e
+       options(expressions = expressions_opt_new)
+       on.exit(options(expressions = expressions_opt), add = TRUE)
+       e$expectation_calls <- frame_calls(11, 2)
+       test_error <<- e
+       register_expectation(e)
+       e$handled <- TRUE
+       test_error <<- e
+   }, "invalid 'times' argument", base::quote(rep(x = 23, times = nrow(nodes)))) at testthat/test_computing.R:8
+2: eval(code, test_env)
 
-══ testthat results  ════════════════════════
-OK: 10 SKIPPED: 0 FAILED: 1
-1. Error: Server assignments work (@test_computing.R#17) 
+[31m──[39m [31m2. Error: Fog nodes generation works (@test_computing.R#59) [39m [31m───────[39m
+invalid 'times' argument
+1: .handleSimpleError(function (e) 
+   {
+       handled <<- TRUE
+       test_error <<- e
+       options(expressions = expressions_opt_new)
+       on.exit(options(expressions = expressions_opt), add = TRUE)
+       e$expectation_calls <- frame_calls(11, 2)
+       test_error <<- e
+       register_expectation(e)
+       e$handled <- TRUE
+       test_error <<- e
+   }, "invalid 'times' argument", base::quote(rep(x = 23, times = nrow(nodes)))) at testthat/test_computing.R:59
+2: eval(code, test_env)
+
+[31m──[39m [31m3. Error: Fog nodes generation works with multiple cell assignments [39m
+$ operator is invalid for atomic vectors
+1: build5GScenario(lats = coboCells$lat, lons = coboCells$lon) at testthat/test_computing.R:114
+2: groupElems(lats = lats, lons = lons, groupN = 6, maxDis = 10000)
+
+[31m──[39m [31m4. Error: Fog node endpoints are generated correctly (@test_computin[39m
+$ operator is invalid for atomic vectors
+1: build5GScenario(lats = coboCells$lat, lons = coboCells$lon) at testthat/test_computing.R:188
+2: groupElems(lats = lats, lons = lons, groupN = 6, maxDis = 10000)
+
+[31m──[39m [31m5. Error: Endpoints generation works (@test_computing.R#256) [39m [31m──────[39m
+invalid 'times' argument
+1: .handleSimpleError(function (e) 
+   {
+       handled <<- TRUE
+       test_error <<- e
+       options(expressions = expressions_opt_new)
+       on.exit(options(expressions = expressions_opt), add = TRUE)
+       e$expectation_calls <- frame_calls(11, 2)
+       test_error <<- e
+       register_expectation(e)
+       e$handled <- TRUE
+       test_error <<- e
+   }, "invalid 'times' argument", base::quote(rep(x = 23, times = nrow(nodes)))) at testthat/test_computing.R:256
+2: eval(code, test_env)
+
+══ testthat results  ══════════════════════════════════════════════════
+[ OK: 4 | SKIPPED: 0 | WARNINGS: 0 | FAILED: 5 ]
+1. Error: Server assignments work (@test_computing.R#8) 
+2. Error: Fog nodes generation works (@test_computing.R#59) 
+3. Error: Fog nodes generation works with multiple cell assignments (@test_computing.R#114) 
+4. Error: Fog node endpoints are generated correctly (@test_computing.R#188) 
+5. Error: Endpoints generation works (@test_computing.R#256) 
 
 Error: testthat unit tests failed
 Execution halted

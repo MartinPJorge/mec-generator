@@ -14,20 +14,23 @@ stackAndFill <- function(dfA, dfB) {
 
   # Fill in dfB those elements of dfA that it doesn't have
   for (prop in setdiff(names(dfA), names(dfB))) {
-    props[[prop]] <- c(as.vector(dfA[[prop]]), rep(x = NULL, times = nrow(dfB)))
+    if (is.numeric(dfA[[prop]][1])) {
+      props[[prop]] <- c(as.vector(dfA[[prop]]), rep(x = 0, times = nrow(dfB)))
+    } else {
+      props[[prop]] <- c(as.vector(dfA[[prop]]), rep(x = "", times = nrow(dfB)))
+    }
   }
 
   # Fill in dfA those elements of dfB that it doesn't have
   for (prop in setdiff(names(dfB), names(dfA))) {
-    props[[prop]] <- c(rep(x = NULL, times = nrow(dfA)), as.vector(dfB[[prop]]))
+    if (is.numeric(dfB[[prop]][1])) {
+      props[[prop]] <- c(rep(x = 0, times = nrow(dfA)), as.vector(dfB[[prop]]))
+    } else {
+      props[[prop]] <- c(rep(x = "", times = nrow(dfA)), as.vector(dfB[[prop]]))
+    }
   }
 
-  stacked <- data.frame()
-  for (prop in props) {
-    stacked[[prop]] <- props[[prop]]
-  }
-
-  return(stacked)
+  return(as.data.frame(props))
 }
 
 
@@ -39,7 +42,6 @@ stackAndFill <- function(dfA, dfB) {
 #' @param link data.frame(from, to, bandwidth, bandwidthUnits, distance,
 #' distanceUnits)
 #' @param numServers number of servers to be attached
-#' @param delay delay for link between each server and the attached switch
 #' @param bandwidth bandwidth for link between each server and the switch
 #' @param bandwidthUnits string for bandwidth units
 #' @param distance distance beween servers and switches
@@ -49,9 +51,9 @@ stackAndFill <- function(dfA, dfB) {
 #' @param idPrefix string to be prefixed before the server id
 #' @return list(nodes = data.frame, links = data.frame)
 #' @note the function iterates through all the switches to assign the servers
-attachServers <- function(nodes, links, numServers, delay, bandwidth,
-                          bandwidthUnits, distance, distanceUnits, switchType,
-                          properties, idPrefix) {
+attachServers <- function(nodes, links, numServers, bandwidth, bandwidthUnits,
+                          distance, distanceUnits, switchType, properties,
+                          idPrefix) {
   switches <- nodes[which(nodes$type == switchType),]
   if (nrow(switches) == 0) {
     warning(paste("Trying to attach server to non existing switches of type ",
@@ -59,8 +61,8 @@ attachServers <- function(nodes, links, numServers, delay, bandwidth,
     return(NULL)
   }
 
-  if (nrow(subset(nodes, grepl(idPrefix, id))) > 0) {
-    warning(paste("There are already node ids containing prefix ", idPrefix,
+  if (nrow(subset(switches, grepl(idPrefix, id))) > 0) {
+    warning(paste("There are already server ids containing prefix ", idPrefix,
                   sep = ""))
     return(NULL)
   }
@@ -73,7 +75,7 @@ attachServers <- function(nodes, links, numServers, delay, bandwidth,
   for (servNum in 0:(numServers - 1)) {
     switchIdx <- servNum %% nrow(switches) + 1
     servIds <- c(servIds, paste(idPrefix, "_server_", servNum, sep = ""))
-    switchIds <- c(switchIds, switches$id[switchIdx])
+    switchIds <- c(switchIds, as.vector(switches$id)[switchIdx])
     servLons <- c(servLons, switches$lon[switchIdx])
     servLats <- c(servLats, switches$lat[switchIdx])
   }
@@ -82,7 +84,7 @@ attachServers <- function(nodes, links, numServers, delay, bandwidth,
   serverNodes <- data.frame(id = servIds, lon = servLons, lat = servLats,
                       type = rep(x = "server", times = numServers))
   for (att in attributes(properties)$names) {
-    nodes[,att] <- properties[[att]]
+    serverNodes[,att] <- properties[[att]]
   }
 
   # Create the server links data.frame
@@ -100,32 +102,54 @@ attachServers <- function(nodes, links, numServers, delay, bandwidth,
 
 
 #' @export
-#' @name genFogNodes
-#' @title genFogNodes
-#' @description Generates fog computing nodes within a certain region
+#' @name attachFogNodes
+#' @title attachFogNodes
+#' @description Generates fog computing nodes within a certain region, and
+#' attaches them to the existing infrastructure
+#' @param nodes data.frame(id, type, lon, lat)
+#' @param link data.frame(from, to, bandwidth, bandwidthUnits, distance,
+#' distanceUnits)
 #' @param latB region bottom latitude limit
 #' @param latT region top latitude limit
 #' @param lonL region left longitude limit
 #' @param lonR region right longitude limit
-#' @param cells data.frame(lon, lat) cell antennas' coordinates
 #' @param numNodes number of fog compute nodes to generate
 #' @param properties list with compute node resource properties
-#' @return data.frame(lon, lat, cellLon, cellLat, cellPos, fogId,
-#' prop1, ..., propN)
-genFogNodes <- function(latB, latT, lonL, lonR, cells, numNodes, properties) {
+#' @param bandwidth bandwidth for link between each server and the switch
+#' @param bandwidthUnits string for bandwidth units
+#' @param distanceUnits string for distance units
+#' @param idPrefix string to be prefixed before the fog node id
+#' @param dis minimum distance in meters to attach to a cell, if not specified
+#'            it attachs the fog nodes to their nearest cells
+#' @return list(nodes = data.frame, links = data.frame)
+attachFogNodes <- function(nodes, links, latB, latT, lonL, lonR, numNodes,
+                           properties, bandwidth, bandwidthUnits, idPrefix,
+                           dis = -1) {
+  cells <- nodes[which(nodes$type == "cell"),]
+  if (nrow(cells) == 0) {
+    warning("No cells within the nodes data.frame")
+    return(NULL)
+  }
+  if (nrow(subset(cells, grepl(idPrefix, id))) > 0) {
+    warning(paste("There are already fog node ids containing prefix ", idPrefix,
+                  sep = ""))
+    return(NULL)
+  }
+
   fogLats <- runif(n = numNodes, min = latB, max = latT)
   fogLons <- runif(n = numNodes, min = lonL, max = lonR)
   fogIds <- c()
-  assignedLon <- c()
-  assignedLat <- c()
-  assignedPos <- c()
+  assignedFog <- c()
+  assignedCell <- c()
+  distances <- c()
 
   for (fog in 1:numNodes) {
     fogLon <- fogLons[fog]
     fogLat <- fogLats[fog]
-    fogIds <- c(fogIds, paste("fogNode_", fog, sep = ""))
+    fogId <- paste(idPrefix, "_fogNode_", fog, sep = "")
+    fogIds <- c(fogIds, fogId)
 
-    # Find nearest cell to be assigned
+    # Find cells to be assigned
     assigned <- 1
     minDis <- Inf
     for (row in 1:nrow(cells)) {
@@ -136,51 +160,147 @@ genFogNodes <- function(latB, latT, lonL, lonR, cells, numNodes, properties) {
         assigned <- row
         minDis <- currDis
       }
+
+      # If falling within the accepted distance
+      if (dis > 0 && currDis <= dis) {
+        assignedFog <- c(assignedFog, fogId)
+        assignedCell <- c(assignedCell, as.vector(cells[row,]$id))
+        distances <- c(distances, currDis)
+      }
     }
 
-    assignedPos <- c(assignedPos, assigned)
-    assignedLon <- c(assignedLon, cells[assigned,]$lon)
-    assignedLat <- c(assignedLat, cells[assigned,]$lat)
+    # If we just assign to the minimum distance cell
+    if (dis == -1) {
+      assignedFog <- c(assignedFog, fogId)
+      assignedCell <- c(assignedCell, as.vector(cells[assigned,]$id))
+      distances <- c(distances, minDis)
+    }
   }
 
-  fogNodes <- data.frame(lon = fogLons, lat = fogLats, cellLon = assignedLon,
-                    cellLat = assignedLat, cellPos = assignedPos,
-                    fogId = fogIds)
-
+  # Create the nodes data.frame
+  fogNodes <- data.frame(id = fogIds, type = "fogNode", lon = fogLons,
+                      lat = fogLats)
   for (att in attributes(properties)$names) {
     fogNodes[,att] <- rep(x = properties[[att]], n = numNodes)
   }
 
-  return(fogNodes)
+  # Create the links data.frame
+  fogLinks <- data.frame(from = assignedFog, to = assignedCell,
+                      bandwidth = rep(x = bandwidth, times = numNodes),
+                      bandwidthUnits = rep(x = bandwidthUnits,
+                                           times = numNodes),
+                      distance = distances,
+                      distanceUnits = rep(x = "meters", times = numNodes))
+
+  return(list(nodes = stackAndFill(nodes, fogNodes),
+              links = stackAndFill(links, fogLinks)))
 }
 
 
 #' @export
-#' @name genEndpoints
-#' @title genEndpoints
-#' @description Generates endpoints within the selected region, asking for
-#' certain bandwidth resources
+#' @name attachFogEndpoints
+#' @title attachFogEndpoints
+#' @description Creates fog nodes with associated endpoints. The fog nodes are
+#' connected to cells, while the endpoints are attached to the fog nodes.
+#' @param nodes data.frame(id, type, lon, lat)
+#' @param link data.frame(from, to, bandwidth, bandwidthUnits, distance,
+#' distanceUnits)
 #' @param latB region bottom latitude limit
 #' @param latT region top latitude limit
 #' @param lonL region left longitude limit
 #' @param lonR region right longitude limit
-#' @param cells data.frame(lon, lat) cell antennas' coordinates
+#' @param numNodes number of fog compute nodes to generate
+#' @param properties list with compute node resource properties
+#' @param bandwidth bandwidth for link between each server and the switch
+#' @param bandwidthUnits string for bandwidth units
+#' @param distanceUnits string for distance units
+#' @param idPrefix string to be prefixed before the fog node id
+#' @param dis minimum distance in meters to attach to a cell, if not specified
+#'            it attachs the fog nodes to their nearest cells
+#' @return list(nodes = data.frame, links = data.frame)
+attachFogEndpoints <- function(nodes, links, latB, latT, lonL, lonR, numNodes,
+                           properties, bandwidth, bandwidthUnits, idPrefix,
+                           dis = -1) {
+
+  attachFrames <- attachFogNodes(nodes = nodes, links = links, latB = latB,
+                                 latT = latT, lonL = lonL, lonR = lonR,
+                                 numNodes = numNodes,
+                                 properties = properties, bandwidth = bandwidth,
+                                 bandwidthUnits = "Mpbs",
+                                 idPrefix = paste("fogEndpoint_", idPrefix, sep=""),
+                                 dis = dis)
+
+  # Attach the endpoints associated to the fog nodes
+  fogNodes <- tail(attachFrames$nodes, n = numNodes)
+  endIds <- c()
+  endLons <- c()
+  endLats <- c()
+  froms <- c()
+  tos <- c()
+  for (row in 1:nrow(fogNodes)) {
+    endId <- paste("fogEndpoint_", idPrefix, "_endpoint_", row, sep="")
+    endIds <- c(endIds, endId)
+    endLons <- c(endLons, fogNodes[row,]$lon)
+    endLats <- c(endLats, fogNodes[row,]$lat)
+    froms <- c(froms, endId)
+    tos <- c(tos, as.vector(fogNodes$id)[row])
+  }
+
+  endPoints <- data.frame(id = endIds, type = rep("endpoint", times = numNodes),
+                          lon = endLons, lat = endLats)
+  end2FogLinks <- data.frame(from = froms, to = tos,
+                             bandwidth = rep(100000000000, times = numNodes),
+                             bandwidthUnits = rep("Mbps", times = numNodes),
+                             distance = rep(0, times = numNodes),
+                             distanceUnits = rep("meters", times = numNodes))
+
+
+  return(list(nodes = stackAndFill(attachFrames$nodes, endPoints),
+              links = stackAndFill(attachFrames$links, end2FogLinks)))
+}
+
+
+#' @export
+#' @name attachEndpoints
+#' @title attachEndpoints
+#' @description Generates endpoints within the selected region, asking for
+#' certain bandwidth resources. And attaches them to the nearest cells.
+#' @param nodes data.frame(id, type, lon, lat)
+#' @param link data.frame(from, to, bandwidth, bandwidthUnits, distance,
+#' distanceUnits)
+#' @param latB region bottom latitude limit
+#' @param latT region top latitude limit
+#' @param lonL region left longitude limit
+#' @param lonR region right longitude limit
 #' @param numEndpoints number of endpoints to be generated
 #' @param bandwidth bandwidth resources available for each user
-#' @return data.frame(lon, lat, cellLon, cellLat, cellPos, enpointId, bandwidth)
-genEndpoints <- function(latB, latT, lonL, lonR, cells, numEndpoints,
-                         bandwidth) {
+#' @param bandwidthUnits string for bandwidth units
+#' @param idPrefix string to be prefixed before the fog node id
+#' @return list(nodes = data.frame, links = data.frame)
+attachEndpoints <- function(nodes, links, latB, latT, lonL, lonR, numEndpoints,
+                         bandwidth, bandwidthUnits, idPrefix) {
+  cells <- nodes[which(nodes$type == "cell"),]
+  if (nrow(cells) == 0) {
+    warning("No cells within the nodes data.frame")
+    return(NULL)
+  }
+  if (nrow(subset(cells, grepl(idPrefix, id))) > 0) {
+    warning(paste("There are already endpoint ids containing prefix ", idPrefix,
+                  sep = ""))
+    return(NULL)
+  }
+
   endsLons <- runif(n = numEndpoints, min = lonL, max = lonR)
   endsLats <- runif(n = numEndpoints, min = latB, max = latT)
   endpointIds <- c()
-  assignedLon <- c()
-  assignedLat <- c()
-  assignedPos <- c()
+  assignedCells <- c()
+  distances <- c()
 
   for (endpoint in 1:numEndpoints) {
     endpointLon <- endsLons[endpoint]
     endpointLat <- endsLats[endpoint]
-    endpointIds <- c(endpointIds, paste("endpoint_", endpoint, sep = ""))
+    endpointIds <- c(endpointIds, paste(idPrefix, "_endpoint_", endpoint,
+                                        sep = ""))
 
     # Find nearest cell to be assigned
     assigned <- 1
@@ -195,40 +315,49 @@ genEndpoints <- function(latB, latT, lonL, lonR, cells, numEndpoints,
       }
     }
 
-    assignedPos <- c(assignedPos, assigned)
-    assignedLon <- c(assignedLon, cells[assigned,]$lon)
-    assignedLat <- c(assignedLat, cells[assigned,]$lat)
+    distances <- c(distances, minDis)
+    assignedCells <- c(assignedCells, as.vector(cells[assigned,]$id))
   }
 
-  return(data.frame(lon = endsLons, lat = endsLats, cellLon = assignedLon,
-                    cellLat = assignedLat, cellPos = assignedPos,
-                    endpointId = endpointIds,
-                    bandwidth = rep(x = bandwidth, times = numEndpoints)))
+  # Create the nodes data.frame
+  endpointNodes <- data.frame(id = endpointIds,
+                          type = rep(x = "endpoint", times = numEndpoints),
+                          lon = endsLons, lat = endsLats)
+
+  # Create the links data.frame
+  endpointLinks <- data.frame(from = endpointIds, to = assignedCells,
+                      bandwidth = rep(x = bandwidth, times = numEndpoints),
+                      bandwidthUnits = rep(x = bandwidthUnits,
+                                           times = numEndpoints),
+                      distance = distances,
+                      distanceUnits = rep(x = "meters", times = numEndpoints))
+
+  return(list(nodes = stackAndFill(nodes, endpointNodes),
+              links = stackAndFill(links, endpointLinks)))
 }
 
 
 
-# nodes <- mecgen::coboNodes
-# links <- mecgen::coboLinks
+#  nodes <- mecgen::coboNodes
+#  links <- mecgen::coboLinks
 #
-# nodes[["strangeVal"]] <- rep(x = 23, times = nrow(nodes))
-# delay <- 20
-# bandwidth <- 1
-# bandwidthUnits <- "Gb/s"
-# distance <- 2
-# distanceUnits <- "meters"
-# properties <- list(cpu = 2, disk = 100, mem = 16)
-# numServers <- 5
+#  nodes[["strangeVal"]] <- rep(x = 23, times = nrow(nodes))
+#  bandwidth <- 1
+#  bandwidthUnits <- "Gb/s"
+#  distance <- 2
+#  distanceUnits <- "meters"
+#  properties <- list(cpu = 2, disk = 100, mem = 16, rare = 20)
+#  numServers <- 5
 #
-# attachFrames <- attachServers(nodes = nodes, links = links,
-#                               numServers = numServers, delay = delay,
-#                               bandwidth = bandwidth,
-#                               bandwidthUnits = bandwidthUnits,
-#                               distance = distance,
-#                               distanceUnits = distanceUnits, switchType = "m2",
-#                               properties = properties, idPrefix = "dell_")
-# newNodes <- attachFrames$nodes
-# newLinks <- attachFrames$links
-# servNodes <- tail(newNodes, n = numServers)
-# servLinks <- tail(newNodes, n = numServers)
-#
+#  attachFrames <- attachServers(nodes = nodes, links = links,
+#                                numServers = numServers,
+#                                bandwidth = bandwidth,
+#                                bandwidthUnits = bandwidthUnits,
+#                                distance = distance,
+#                                distanceUnits = distanceUnits,
+#                                switchType = "m2",
+#                                properties = properties, idPrefix = "dell_")
+#  newNodes <- attachFrames$nodes
+#  newLinks <- attachFrames$links
+#  servNodes <- tail(newNodes, n = numServers)
+#  servLinks <- tail(newLinks, n = numServers)

@@ -4,15 +4,13 @@
 \alias{attachServers}
 \title{attachServers}
 \usage{
-attachServers(nodes, links, numServers, delay, bandwidth, bandwidthUnits,
+attachServers(nodes, links, numServers, bandwidth, bandwidthUnits,
   distance, distanceUnits, switchType, properties, idPrefix)
 }
 \arguments{
 \item{nodes}{data.frame(id, type, lon, lat)}
 
 \item{numServers}{number of servers to be attached}
-
-\item{delay}{delay for link between each server and the attached switch}
 
 \item{bandwidth}{bandwidth for link between each server and the switch}
 

@@ -21,8 +21,10 @@ The following code:
 ```R
 library(mecgen)
 
-coboCells <- mecgen::cobo
-regions <- mecgen::regions
+data(cobo)
+data(regions)
+coboCells <- cobo
+regions <- regions
 assocs <- build5GScenario(lats = coboCells$lat, lons = coboCells$lon)
 ```
 creates a list of the followinig `data.frames`:

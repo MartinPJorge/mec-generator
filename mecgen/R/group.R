@@ -247,6 +247,164 @@ linkAggRings <- function(m2Assocs, m2Switches, m2AggAssocs, aggCentCoords,
 }
 
 
+
+
+#' @export
+#' @name graphFrames
+#' @title graphFrames
+#' @description creates the nodes and links data frames for the graph creation
+#' @param m1Assoc data.frame cell coordinates and the M1 ids
+#' @param m1Coords data.frame M1 coordinates and their ids
+#' @param m1AccAssocs data.frame M1 coordinates and the access ring ids
+#' @param accCentCoords data.frame access ring center coordinates and their ids
+#' @param m2Assocs data.frame access ring coords and associated M2 ids
+#' @param m2Switches data.frame M2 switches coordinates and their ids
+#' @param m2AggAssocs data.frame M2 coordinates and aggregation rings ids
+#' @param aggCentCoords data.frame aggregation ring centers and their ids
+#' @param m3Assocs data.frame aggregation ring centers and M3 ids
+#' @param m3Switches data.frame with M3 coordinates and their ids
+#' @param servers data.frame with created servers
+#' @param fogNodes data.frame with fog computing nodes
+#' @param endpoints data.frame with endpoints
+#' @return list(links=data.frame, nodes=data.frame)
+graphFrames <- function(m1Assoc, m1Coords, m1AccAssocs, accCentCoords,
+                           m2Assocs, m2Switches, m2AggAssocs, aggCentCoords,
+                           m3Assocs, m3Switches, servers = NULL,
+                        fogNodes = NULL, endpoints = NULL) {
+
+  ################## NODES CREATION ##################
+  nodes <- NULL
+  nodeIds <- c()
+  nodeTypes <- c()
+  nodeLons <- c()
+  nodeLats <- c()
+
+  # Create the cell nodes
+  for (row in 1:nrow(m1Assoc)) {
+    nodeIds <- c(nodeIds, paste("cell", row, sep = ""))
+    nodeTypes <- c(nodeTypes, "cell")
+    nodeLons <- c(nodeLons, m1Assoc[row,]$lon)
+    nodeLats <- c(nodeLats, m1Assoc[row,]$lat)
+  }
+
+  # Create the M1 nodes
+  for (row in 1:nrow(m1Coords)) {
+    nodeIds <- c(nodeIds, paste("m1_", m1Coords[row,]$group, sep = ""))
+    nodeTypes <- c(nodeTypes, "m1")
+    nodeLons <- c(nodeLons, m1Coords[row,]$lon)
+    nodeLats <- c(nodeLats, m1Coords[row,]$lat)
+  }
+
+  # Create the M2 nodes
+  for (row in 1:nrow(m2Switches)) {
+    nodeIds <- c(nodeIds, paste("m2_", m2Switches[row,]$group, sep = ""))
+    nodeTypes <- c(nodeTypes, "m2")
+    nodeLons <- c(nodeLons, m2Switches[row,]$lon)
+    nodeLats <- c(nodeLats, m2Switches[row,]$lat)
+  }
+
+  # Create the M3 nodes with the redundancy
+  for (row in 1:nrow(m3Switches)) {
+    nodeIds <- c(nodeIds, paste("m3_", m3Switches[row,]$group, sep = ""))
+    nodeTypes <- c(nodeTypes, "m3")
+    nodeLons <- c(nodeLons, m3Switches[row,]$lon)
+    nodeLats <- c(nodeLats, m3Switches[row,]$lat)
+
+    nodeIds <- c(nodeIds, paste("m3_rep_", m3Switches[row,]$group, sep = ""))
+    nodeTypes <- c(nodeTypes, "m3")
+    nodeLons <- c(nodeLons, m3Switches[row,]$lon)
+    nodeLats <- c(nodeLats, m3Switches[row,]$lat)
+  }
+
+  nodes <- data.frame(id = nodeIds, type = nodeTypes, lon = nodeLons,
+                      lat = nodeLats)
+
+
+  ################## LINKS CREATION ##################
+  links = NULL
+  origins <- c()
+  ends <- c()
+  bandwidths <- c()
+  bandwidthUnits <- c()
+  distances <- c()
+  distanceUnits <- c()
+
+  # Link cells to M1 switches
+  for (row in 1:nrow(m1Assoc)) {
+    m1Coord <- m1Coords[which(m1Coords$group == m1Assoc[row,]$group),][1,]
+    dis <- SDMTools::distance(lat1 = m1Assoc[row,]$lat,
+                              lon1 = m1Assoc[row,]$lon,
+                              lat2 = m1Coord$lat, lon2 = m1Coord$lon)$distance
+    origins <- c(origins, paste("cell", row, sep = ""))
+    ends <- c(ends, paste("m1_", m1Assoc[row,]$group, sep = ""))
+    bandwidths <- c(bandwidths, 10)
+    bandwidthUnits <- c(bandwidthUnits, "Gb/s")
+    distances <- c(distances, dis)
+    distanceUnits <- c(distanceUnits, "meters")
+  }
+
+  # Link the access ring elements
+  accessRingLinks <- linkAccessRings(m1Assoc, m1Coords, m1AccAssocs,
+                                     accCentCoords, m2Assocs)
+  origins <- c(origins, accessRingLinks$from)
+  ends <- c(ends, accessRingLinks$to)
+  bandwidths <- c(bandwidths, accessRingLinks$bandwidth)
+  bandwidthUnits <- c(bandwidthUnits, accessRingLinks$bandwidthUnits)
+  distances <- c(distances, accessRingLinks$distance)
+  distanceUnits <- c(distanceUnits, accessRingLinks$distanceUnits)
+
+  # Link the aggregation ring elements
+  aggRingLinks <- linkAggRings(m2Assocs, m2Switches, m2AggAssocs, aggCentCoords,
+                               m3Assocs, m3Switches)
+  origins <- c(origins, aggRingLinks$from)
+  ends <- c(ends, aggRingLinks$to)
+  bandwidths <- c(bandwidths, aggRingLinks$bandwidth)
+  bandwidthUnits <- c(bandwidthUnits, aggRingLinks$bandwidthUnits)
+  distances <- c(distances, aggRingLinks$distance)
+  distanceUnits <- c(distanceUnits, aggRingLinks$distanceUnits)
+
+
+  # Link all the M3 switches in a ring to ensure reachability
+  if (nrow(m3Switches) > 1) {
+    for (row in 2:nrow(m3Switches)) {
+      dis <- SDMTools::distance(lat1 = m3Switches[row-1,]$lat,
+                                lon1 = m3Switches[row-1,]$lon,
+                                lat2 = m3Switches[row,]$lat,
+                                lon2 = m3Switches[row,]$lon)$distance
+      origins <- c(origins, paste("m3_", m3Switches[row-1,]$group, sep = ""))
+      ends <- c(ends, paste("m3_rep_", m3Switches[row,]$group, sep = ""))
+      bandwidths <- c(bandwidth, 36)
+      bandwidthUnits <- c(bandwidthUnits, "Tb/s")
+      distances <- c(distances, dis)
+      distanceUnits <- c(distanceUnits, "meters")
+    }
+
+    # Connect last M3 to first replica M3
+    lastM3 <- tail(m3Switches, n = 1)
+    firstM3 <- head(m3Switches, n = 1)
+    dis <- SDMTools::distance(lat1 = lastM3$lat, lon1 = lastM3$lon,
+                              lat2 = firstM3$lat, lon2 = firstM3$lon)$distance
+    origins <- c(origins, paste("m3_", lastM3$group, sep = ""))
+    ends <- c(ends, paste("m3_rep_", firstM3$group, sep = ""))
+    bandwidths <- c(bandwidths, 36)
+    bandwidthUnits <- c(bandwidthUnits, "Tb/s")
+    distances <- c(distances, dis)
+    distanceUnits <- c(distanceUnits, "meters")
+  }
+
+
+  links <- data.frame(from = origins, to = ends, bandwidth = bandwidths,
+                      bandwidthUnits = bandwidthUnits, distance = distances,
+                      distanceUnits = distanceUnits)
+
+  return(list(links = links, nodes = nodes))
+  #### # Build and write the graph
+  #### g = igraph::graph_from_data_frame(links, vertices = nodes, directed = FALSE)
+  #### igraph::write_graph(graph = g, file = file, format = format)
+}
+
+
+
 #' @export
 #' @name write5GtoGraph
 #' @title write5GtoGraph

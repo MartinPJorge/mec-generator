@@ -1,5 +1,5 @@
 
-R version 3.5.3 (2019-03-11) -- "Great Truth"
+R version 3.6.1 (2019-07-05) -- "Action of the Toes"
 Copyright (C) 2019 The R Foundation for Statistical Computing
 Platform: x86_64-redhat-linux-gnu (64-bit)
 
@@ -69,6 +69,55 @@ Type 'q()' to quit R.
 +                            m2Assocs, m2Switches, m2AggAssocs, aggCentCoords,
 +                            m3Assocs, m3Switches, format = "gml",
 +                file = "/tmp/5g-mec.gml")
-Error in write5GtoGraph(m1Assoc, m1Coords, m1AccAssocs, accCentCoords,  : 
-  could not find function "write5GtoGraph"
-Execution halted
+> 
+> 
+> 
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("cobo", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> cleanEx()
+> nameEx("regions")
+> ### * regions
+> 
+> flush(stderr()); flush(stdout())
+> 
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: regions
+> ### Title: Regions data for the 5G infrastructure generation
+> ### Aliases: regions
+> ### Keywords: datasets
+> 
+> ### ** Examples
+> 
+> data(regions)
+> regions$regions[[1]]$id
+[1] "Madrid-center"
+> # [1] "Madrid-center"
+> regions$regions[[1]]$populations[[1]]$id
+[1] "Centro"
+> # [1] "Centro"
+> regions$regions[[1]]$populations[[1]]$population
+[1] 132284
+> # [1] 132284
+> regions$regions[[1]]$populations[[1]]$center
+[1] "40.416825,-3.706003"
+> # [1] "40.416825,-3.706003" 
+> 
+> 
+> 
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("regions", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> ### * <FOOTER>
+> ###
+> cleanEx()
+> options(digits = 7L)
+> base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
+Time elapsed:  1.173 0.022 1.202 0 0 
+> grDevices::dev.off()
+null device 
+          1 
+> ###
+> ### Local variables: ***
+> ### mode: outline-minor ***
+> ### outline-regexp: "\\(> \\)?### [*]+" ***
+> ### End: ***
+> quit('no')

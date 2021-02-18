@@ -1,3 +1,8 @@
+addLinkProps            addLinkProps
+addNodeProps            addNodeProps
+attachEndpoints         attachEndpoints
+attachFogEndpoints      attachFogEndpoints
+attachFogNodes          attachFogNodes
 attachServers           attachServers
 baseIntensity           baseIntensity
 build5GScenario         build5GScenario
@@ -7,8 +12,6 @@ coboLinks               Cobo Calleja 5G MEC infrastructure links
 coboNodes               Cobo Calleja 5G MEC infrastructure nodes
                         data.frame
 genCells                genCells
-genEndpoints            genEndpoints
-genFogNodes             genFogNodes
 genIntMatrix            Generates a matrix evaluating an intensity
                         measure function in a grid of coordinates. Rows
                         are for latitude and columns for longitudes.
@@ -17,3 +20,4 @@ intensityFactors        intensityFactors
 regions                 Regions data for the 5G infrastructure
                         generation
 stackAndFill            stackAndFill
+write5GtoGraph          write5GtoGraph

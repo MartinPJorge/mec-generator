@@ -1,5 +1,5 @@
 * using log directory ‘/home/jorge/Documentos/mec-generator/mecgen.Rcheck’
-* using R version 3.5.3 (2019-03-11)
+* using R version 3.6.1 (2019-07-05)
 * using platform: x86_64-redhat-linux-gnu (64-bit)
 * using session charset: UTF-8
 * using options ‘--no-manual --as-cran’
@@ -14,10 +14,10 @@
 * checking for hidden files and directories ... OK
 * checking for portable file names ... OK
 * checking for sufficient/correct file permissions ... OK
-* checking serialization versions ... OK
 * checking whether package ‘mecgen’ can be installed ... OK
 * checking installed package size ... OK
 * checking package directory ... OK
+* checking for future file timestamps ... OK
 * checking DESCRIPTION meta-information ... WARNING
 Non-standard license specification:
   What license it uses
@@ -39,13 +39,16 @@ Standardizable: FALSE
 * checking replacement functions ... OK
 * checking foreign function calls ... OK
 * checking R code for possible problems ... NOTE
+attachEndpoints: no visible binding for global variable ‘id’
+attachEndpoints: no visible global function definition for ‘runif’
+attachFogEndpoints: no visible global function definition for ‘tail’
+attachFogNodes: no visible binding for global variable ‘id’
+attachFogNodes: no visible global function definition for ‘runif’
 attachServers: no visible binding for global variable ‘id’
 baseIntensity: no visible global function definition for ‘fromJSON’
 createMatrix: no visible global function definition for ‘runif’
 findSquare: no visible global function definition for ‘destination’
 genCells: no visible global function definition for ‘owin’
-genEndpoints: no visible global function definition for ‘runif’
-genFogNodes: no visible global function definition for ‘runif’
 genInterpInt : interpolator: no visible global function definition for
   ‘interp2’
 getSquareFactors: no visible global function definition for ‘ceil’
@@ -71,6 +74,9 @@ matternIImapIintMapprox3: no visible global function definition for
   ‘integral2’
 outerRect: no visible global function definition for ‘destination’
 townIntM: no visible global function definition for ‘integral2’
+write5GtoGraph: no visible binding for global variable ‘bandwidth’
+write5GtoGraph: no visible global function definition for ‘tail’
+write5GtoGraph: no visible global function definition for ‘head’
 Undefined global functions or variables:
   as.dist bandwidth ceil cutree destination fromJSON hclust head id
   integral2 interp2 owin rlabel rpoispp runif tail
@@ -85,6 +91,21 @@ to your NAMESPACE file.
 * checking for missing documentation entries ... OK
 * checking for code/documentation mismatches ... OK
 * checking Rd \usage sections ... WARNING
+Undocumented arguments in documentation object 'attachEndpoints'
+  ‘links’
+Documented arguments not in \usage in documentation object 'attachEndpoints':
+  ‘link’
+
+Undocumented arguments in documentation object 'attachFogEndpoints'
+  ‘links’
+Documented arguments not in \usage in documentation object 'attachFogEndpoints':
+  ‘link’ ‘distanceUnits’
+
+Undocumented arguments in documentation object 'attachFogNodes'
+  ‘links’
+Documented arguments not in \usage in documentation object 'attachFogNodes':
+  ‘link’ ‘distanceUnits’
+
 Undocumented arguments in documentation object 'attachServers'
   ‘links’
 Documented arguments not in \usage in documentation object 'attachServers':
@@ -101,61 +122,30 @@ Extensions’ manual.
 Files not of a type allowed in a ‘data’ directory:
   ‘regions.json’
 Please use e.g. ‘inst/extdata’ for non-R data files
+
 * checking data for non-ASCII characters ... OK
 * checking data for ASCII and uncompressed saves ... OK
-* checking examples ... ERROR
-Running examples in ‘mecgen-Ex.R’ failed
-The error most likely occurred in:
-
-> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
-> ### Name: cobo
-> ### Title: Generated antennas data for Cobo Calleja
-> ### Aliases: cobo
-> ### Keywords: datasets
-> 
-> ### ** Examples
-> 
-> data(cobo)
-> assocs <- build5GScenario(lats = cobo$lat, lons = cobo$lon)
-> 
-> m1Assoc <- assocs[[1]]
-> m1Coords <- assocs[[2]]   
-> m1AccAssocs <- assocs[[3]]   
-> accCentCoords <- assocs[[4]]   
-> m2Assocs <- assocs[[5]]   
-> m2Switches <- assocs[[6]]   
-> m2AggAssocs <- assocs[[7]]   
-> aggCentCoords <- assocs[[8]]   
-> m3Assocs <- assocs[[9]]   
-> m3Switches <- assocs[[10]]  
-> 
-> 
-> write5GtoGraph(m1Assoc, m1Coords, m1AccAssocs, accCentCoords,
-+                            m2Assocs, m2Switches, m2AggAssocs, aggCentCoords,
-+                            m3Assocs, m3Switches, format = "gml",
-+                file = "/tmp/5g-mec.gml")
-Error in write5GtoGraph(m1Assoc, m1Coords, m1AccAssocs, accCentCoords,  : 
-  could not find function "write5GtoGraph"
-Execution halted
-* checking for unstated dependencies in ‘tests’ ... OK
+* checking examples ... OK
+* checking for unstated dependencies in ‘tests’ ... WARNING
+'library' or 'require' call not declared from: ‘testthat’
 * checking tests ... ERROR
   Running ‘testthat.R’
 Running the tests in ‘tests/testthat.R’ failed.
 Last 13 lines of output:
-         times = numServers), bandwidth = rep(x = bandwidth, 
-         times = numServers), bandwidthUnits = rep(x = bandwidthUnits, 
-         times = numServers), distance = rep(x = distance, 
-         times = numServers), distanceUnits = rep(x = distanceUnits, 
-         times = numServers), switchType = "m2", properties = properties, 
-         idPrefix = "dell_") at testthat/test_computing.R:17
-  2: data.frame(id = servIds, lon = servLons, lat = servLats, 
-         type = rep(x = "server", times = numServers))
+         e$handled <- TRUE
+         test_error <<- e
+     }, "invalid 'times' argument", base::quote(rep(x = 23, times = nrow(nodes)))) at testthat/test_computing.R:256
+  2: eval(code, test_env)
   
-  ══ testthat results  ════════════════════════
-  OK: 10 SKIPPED: 0 FAILED: 1
-  1. Error: Server assignments work (@test_computing.R#17) 
+  ══ testthat results  ══════════════════════════════════════════════════
+  [ OK: 4 | SKIPPED: 0 | WARNINGS: 0 | FAILED: 5 ]
+  1. Error: Server assignments work (@test_computing.R#8) 
+  2. Error: Fog nodes generation works (@test_computing.R#59) 
+  3. Error: Fog nodes generation works with multiple cell assignments (@test_computing.R#114) 
+  4. Error: Fog node endpoints are generated correctly (@test_computing.R#188) 
+  5. Error: Endpoints generation works (@test_computing.R#256) 
   
   Error: testthat unit tests failed
   Execution halted
 * DONE
-Status: 2 ERRORs, 3 WARNINGs, 1 NOTE
+Status: 1 ERROR, 4 WARNINGs, 1 NOTE
